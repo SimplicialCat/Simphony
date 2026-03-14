@@ -540,23 +540,56 @@
 </tbody></table>
 <h3>5 个半音: 纯四度</h3>
 <p>纯四度的频率比接近于 $\dfrac{4}{3}$, 是纯五度的频率比倒数乘以 $2$.</p>
-<div id="music-player-1" class="music-player" style="margin:0.5em 0; padding:8px 12px; background:#FAFBFC;">
+<div id="music-player-7" class="music-player" style="margin:0.5em 0; padding:8px 12px; background:#FAFBFC;">
     <div style="margin-bottom:4px;">
-        <button onclick="playMusic_1()" style="background:none; color:#465BCF; border:none; padding:2px 8px; cursor:pointer; font-size:13px;">▶ 播放</button>
-        <button onclick="pauseMusic_1()" style="background:none; color:#6AC6E8; border:none; padding:2px 8px; cursor:pointer; font-size:13px;">⏸ 暂停</button>
-        <button onclick="stopMusic_1()" style="background:none; color:#BD9368; border:none; padding:2px 8px; cursor:pointer; font-size:13px;">⏹ 停止</button>
+        <button id="music-player-7-playpause" onclick="togglePlay_7()" style="background:none; color:#465BCF; border:none; padding:2px 8px; cursor:pointer; font-size:13px;">▶ 播放</button>
+        <button onclick="stopMusic_7()" style="background:none; color:#BD9368; border:none; padding:2px 8px; cursor:pointer; font-size:13px;">⏹ 停止</button>
     </div>
-    <div id="music-player-1-status" style="color:#8DA4F1; font-size:12px;">准备播放</div>
+    <div id="music-player-7-progress-container" style="width:100%; height:6px; background:#E9ECEF; border-radius:3px; margin-top:6px;">
+        <div id="music-player-7-progress-fill" style="width:0%; height:100%; background:#A6BBCF; border-radius:3px;"></div>
+    </div>
     <script>
     (function() {
         const data = {"bpm": 120, "key": "C", "parts": [[[{"duration": 1.0, "notes": [{"freq": 261.63, "duration": 1.0}]}, {"duration": 1.0, "notes": [{"freq": 349.23, "duration": 1.0}]}, {"duration": 2.0, "notes": [{"freq": 261.63, "duration": 2.0}, {"freq": 349.23, "duration": 2.0}]}, {"duration": 1.0, "notes": [{"freq": 220.0, "duration": 1.0}]}, {"duration": 1.0, "notes": [{"freq": 293.67, "duration": 1.0}]}, {"duration": 2.0, "notes": [{"freq": 220.0, "duration": 2.0}, {"freq": 293.67, "duration": 2.0}]}]]]};
-        const statusDiv = document.getElementById('music-player-1-status');
+        const playerDiv = document.getElementById('music-player-7');
+        const playPauseBtn = document.getElementById('music-player-7-playpause');
+        const progressFill = document.getElementById('music-player-7-progress-fill');
+        
         let audioCtx = null;
         let scheduledNodes = [];
         let isPlaying = false;
+        let totalDuration = 0;          // 总时长（秒）
+        let playStartTime = 0;           // 开始播放时的 audioCtx.currentTime
+        let pauseTime = 0;               // 暂停时的累积已播放时间（用于恢复）
+        let progressInterval = null;
         
         function getBeatDuration() {
             return 60 / data.bpm;
+        }
+        
+        // 计算总时长和收集事件（与schedule前半部分相同，但只计算总时长）
+        function calculateTotalDuration() {
+            let partStartOffset = 0;
+            let maxEnd = 0;
+            for (let pi = 0; pi < data.parts.length; pi++) {
+                let part = data.parts[pi];
+                let voiceDurations = [];
+                for (let voice of part) {
+                    let voiceDuration = 0;
+                    for (let group of voice) {
+                        if (group.start_offset !== undefined) {
+                            voiceDuration = Math.max(voiceDuration, group.start_offset + group.duration);
+                        } else {
+                            voiceDuration += group.duration;
+                        }
+                    }
+                    voiceDurations.push(voiceDuration);
+                }
+                let partDuration = Math.max(...voiceDurations);
+                partStartOffset += partDuration * getBeatDuration();
+                maxEnd = partStartOffset;
+            }
+            return maxEnd;
         }
         
         function schedule() {
@@ -564,20 +597,18 @@
             
             const beat = getBeatDuration();
             
-            // 收集所有音符事件
+            // 收集所有音符事件（与原来相同）
             let events = [];
             let partStartOffset = 0;
             
             for (let pi = 0; pi < data.parts.length; pi++) {
                 let part = data.parts[pi];
                 
-                // 计算这个段落中每个声部的时长
                 let voiceDurations = [];
                 for (let voice of part) {
                     let voiceDuration = 0;
                     for (let group of voice) {
                         if (group.start_offset !== undefined) {
-                            // pedal音符
                             voiceDuration = Math.max(voiceDuration, group.start_offset + group.duration);
                         } else {
                             voiceDuration += group.duration;
@@ -586,10 +617,8 @@
                     voiceDurations.push(voiceDuration);
                 }
                 
-                // 段落时长取所有声部的最大值
                 let partDuration = Math.max(...voiceDurations);
                 
-                // 处理段落内的所有声部和音符
                 for (let voiceIdx = 0; voiceIdx < part.length; voiceIdx++) {
                     let voice = part[voiceIdx];
                     let voiceDuration = voiceDurations[voiceIdx];
@@ -600,15 +629,12 @@
                         let startTime;
                         
                         if (group.start_offset !== undefined) {
-                            // pedal音符：从段落开始 + start_offset
                             startTime = partStartOffset + group.start_offset * beat;
                         } else {
-                            // 普通音符：从段落开始 + 累积位置
                             startTime = partStartOffset + voiceTime * beat;
                             voiceTime += group.duration;
                         }
                         
-                        // 收集音符
                         for (let note of group.notes) {
                             if (note.freq !== null) {
                                 events.push({
@@ -621,22 +647,14 @@
                     }
                 }
                 
-                // 推进段落偏移量
                 partStartOffset += partDuration * beat;
             }
             
-            // 按开始时间排序
             events.sort((a, b) => a.start - b.start);
             
-            // 计算总时长
-            let totalDuration = 0;
-            for (let e of events) {
-                totalDuration = Math.max(totalDuration, e.start + e.duration);
-            }
-            
+            // 实际调度
             let startTime = audioCtx.currentTime + 0.1;
             
-            // 播放所有音符
             for (let e of events) {
                 let osc = audioCtx.createOscillator();
                 let gain = audioCtx.createGain();
@@ -659,49 +677,79 @@
             }
             
             isPlaying = true;
-            statusDiv.textContent = '🎵 播放中...';
-            
-            setTimeout(() => {
-                if (isPlaying) {
-                    statusDiv.textContent = '✅ 播放完成';
-                    isPlaying = false;
-                }
-            }, totalDuration * 1000);
+            playPauseBtn.textContent = '⏸ 暂停';
         }
         
-        window.playMusic_1 = function() {
+        // 更新进度条
+        function startProgressUpdate() {
+            if (progressInterval) cancelAnimationFrame(progressInterval);
+            
+            function update() {
+                if (!isPlaying || !audioCtx) {
+                    progressInterval = null;
+                    return;
+                }
+                let elapsed = audioCtx.currentTime - playStartTime;
+                let percent = Math.min(100, (elapsed / totalDuration) * 100);
+                progressFill.style.width = percent + '%';
+                
+                if (elapsed >= totalDuration) {
+                    // 播放结束
+                    isPlaying = false;
+                    playPauseBtn.textContent = '▶ 播放';
+                    progressFill.style.width = '100%';
+                    cancelAnimationFrame(progressInterval);
+                    progressInterval = null;
+                } else {
+                    progressInterval = requestAnimationFrame(update);
+                }
+            }
+            progressInterval = requestAnimationFrame(update);
+        }
+        
+        window.togglePlay_7 = function() {
             if (!audioCtx) {
                 audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                totalDuration = calculateTotalDuration();
             }
             
-            if (audioCtx.state === 'suspended') {
-                audioCtx.resume();
-            }
-            
-            // 停止之前的播放
-            for (let node of scheduledNodes) {
-                try {
-                    node.gain.gain.cancelScheduledValues(0);
-                    node.gain.gain.setValueAtTime(0, audioCtx.currentTime);
-                    node.osc.stop(audioCtx.currentTime + 0.01);
-                } catch(e) {}
-            }
-            scheduledNodes = [];
-            
-            schedule();
-        };
-        
-        window.pauseMusic_1 = function() {
-            if (audioCtx && audioCtx.state === 'running') {
+            if (isPlaying) {
+                // 暂停
                 audioCtx.suspend();
-                statusDiv.textContent = '⏸ 已暂停';
-            } else if (audioCtx && audioCtx.state === 'suspended') {
-                audioCtx.resume();
-                statusDiv.textContent = '🎵 播放中...';
+                isPlaying = false;
+                playPauseBtn.textContent = '▶ 播放';
+                if (progressInterval) {
+                    cancelAnimationFrame(progressInterval);
+                    progressInterval = null;
+                }
+            } else {
+                // 播放或恢复
+                if (audioCtx.state === 'suspended') {
+                    audioCtx.resume();
+                } else {
+                    // 全新播放，停止之前的调度
+                    for (let node of scheduledNodes) {
+                        try {
+                            node.gain.gain.cancelScheduledValues(0);
+                            node.gain.gain.setValueAtTime(0, audioCtx.currentTime);
+                            node.osc.stop(audioCtx.currentTime + 0.01);
+                        } catch(e) {}
+                    }
+                    scheduledNodes = [];
+                    
+                    // 重新调度
+                    playStartTime = audioCtx.currentTime + 0.1;  // 与schedule内的偏移一致
+                    schedule();
+                }
+                
+                isPlaying = true;
+                playPauseBtn.textContent = '⏸ 暂停';
+                startProgressUpdate();
             }
         };
         
-        window.stopMusic_1 = function() {
+        window.stopMusic_7 = function() {
+            // 停止所有声音
             for (let node of scheduledNodes) {
                 try {
                     node.gain.gain.cancelScheduledValues(0);
@@ -716,30 +764,69 @@
             }
             
             isPlaying = false;
-            statusDiv.textContent = '⏹ 已停止';
+            playPauseBtn.textContent = '▶ 播放';
+            progressFill.style.width = '0%';
+            
+            if (progressInterval) {
+                cancelAnimationFrame(progressInterval);
+                progressInterval = null;
+            }
         };
     })();
     </script>
 </div>
 <h3>7 个半音: 纯五度</h3>
 <p>纯五度的频率比接近于 $\dfrac{3}{2}$, 和谐程度仅次于八度. 稳定, 但有些平淡.</p>
-<div id="music-player-2" class="music-player" style="margin:0.5em 0; padding:8px 12px; background:#FAFBFC;">
+<div id="music-player-8" class="music-player" style="margin:0.5em 0; padding:8px 12px; background:#FAFBFC;">
     <div style="margin-bottom:4px;">
-        <button onclick="playMusic_2()" style="background:none; color:#465BCF; border:none; padding:2px 8px; cursor:pointer; font-size:13px;">▶ 播放</button>
-        <button onclick="pauseMusic_2()" style="background:none; color:#6AC6E8; border:none; padding:2px 8px; cursor:pointer; font-size:13px;">⏸ 暂停</button>
-        <button onclick="stopMusic_2()" style="background:none; color:#BD9368; border:none; padding:2px 8px; cursor:pointer; font-size:13px;">⏹ 停止</button>
+        <button id="music-player-8-playpause" onclick="togglePlay_8()" style="background:none; color:#465BCF; border:none; padding:2px 8px; cursor:pointer; font-size:13px;">▶ 播放</button>
+        <button onclick="stopMusic_8()" style="background:none; color:#BD9368; border:none; padding:2px 8px; cursor:pointer; font-size:13px;">⏹ 停止</button>
     </div>
-    <div id="music-player-2-status" style="color:#8DA4F1; font-size:12px;">准备播放</div>
+    <div id="music-player-8-progress-container" style="width:100%; height:6px; background:#E9ECEF; border-radius:3px; margin-top:6px;">
+        <div id="music-player-8-progress-fill" style="width:0%; height:100%; background:#A6BBCF; border-radius:3px;"></div>
+    </div>
     <script>
     (function() {
         const data = {"bpm": 120, "key": "C", "parts": [[[{"duration": 1.0, "notes": [{"freq": 261.63, "duration": 1.0}]}, {"duration": 1.0, "notes": [{"freq": 392.0, "duration": 1.0}]}, {"duration": 2.0, "notes": [{"freq": 261.63, "duration": 2.0}, {"freq": 392.0, "duration": 2.0}]}, {"duration": 1.0, "notes": [{"freq": 220.0, "duration": 1.0}]}, {"duration": 1.0, "notes": [{"freq": 329.63, "duration": 1.0}]}, {"duration": 2.0, "notes": [{"freq": 220.0, "duration": 2.0}, {"freq": 329.63, "duration": 2.0}]}]]]};
-        const statusDiv = document.getElementById('music-player-2-status');
+        const playerDiv = document.getElementById('music-player-8');
+        const playPauseBtn = document.getElementById('music-player-8-playpause');
+        const progressFill = document.getElementById('music-player-8-progress-fill');
+        
         let audioCtx = null;
         let scheduledNodes = [];
         let isPlaying = false;
+        let totalDuration = 0;          // 总时长（秒）
+        let playStartTime = 0;           // 开始播放时的 audioCtx.currentTime
+        let pauseTime = 0;               // 暂停时的累积已播放时间（用于恢复）
+        let progressInterval = null;
         
         function getBeatDuration() {
             return 60 / data.bpm;
+        }
+        
+        // 计算总时长和收集事件（与schedule前半部分相同，但只计算总时长）
+        function calculateTotalDuration() {
+            let partStartOffset = 0;
+            let maxEnd = 0;
+            for (let pi = 0; pi < data.parts.length; pi++) {
+                let part = data.parts[pi];
+                let voiceDurations = [];
+                for (let voice of part) {
+                    let voiceDuration = 0;
+                    for (let group of voice) {
+                        if (group.start_offset !== undefined) {
+                            voiceDuration = Math.max(voiceDuration, group.start_offset + group.duration);
+                        } else {
+                            voiceDuration += group.duration;
+                        }
+                    }
+                    voiceDurations.push(voiceDuration);
+                }
+                let partDuration = Math.max(...voiceDurations);
+                partStartOffset += partDuration * getBeatDuration();
+                maxEnd = partStartOffset;
+            }
+            return maxEnd;
         }
         
         function schedule() {
@@ -747,20 +834,18 @@
             
             const beat = getBeatDuration();
             
-            // 收集所有音符事件
+            // 收集所有音符事件（与原来相同）
             let events = [];
             let partStartOffset = 0;
             
             for (let pi = 0; pi < data.parts.length; pi++) {
                 let part = data.parts[pi];
                 
-                // 计算这个段落中每个声部的时长
                 let voiceDurations = [];
                 for (let voice of part) {
                     let voiceDuration = 0;
                     for (let group of voice) {
                         if (group.start_offset !== undefined) {
-                            // pedal音符
                             voiceDuration = Math.max(voiceDuration, group.start_offset + group.duration);
                         } else {
                             voiceDuration += group.duration;
@@ -769,10 +854,8 @@
                     voiceDurations.push(voiceDuration);
                 }
                 
-                // 段落时长取所有声部的最大值
                 let partDuration = Math.max(...voiceDurations);
                 
-                // 处理段落内的所有声部和音符
                 for (let voiceIdx = 0; voiceIdx < part.length; voiceIdx++) {
                     let voice = part[voiceIdx];
                     let voiceDuration = voiceDurations[voiceIdx];
@@ -783,15 +866,12 @@
                         let startTime;
                         
                         if (group.start_offset !== undefined) {
-                            // pedal音符：从段落开始 + start_offset
                             startTime = partStartOffset + group.start_offset * beat;
                         } else {
-                            // 普通音符：从段落开始 + 累积位置
                             startTime = partStartOffset + voiceTime * beat;
                             voiceTime += group.duration;
                         }
                         
-                        // 收集音符
                         for (let note of group.notes) {
                             if (note.freq !== null) {
                                 events.push({
@@ -804,22 +884,14 @@
                     }
                 }
                 
-                // 推进段落偏移量
                 partStartOffset += partDuration * beat;
             }
             
-            // 按开始时间排序
             events.sort((a, b) => a.start - b.start);
             
-            // 计算总时长
-            let totalDuration = 0;
-            for (let e of events) {
-                totalDuration = Math.max(totalDuration, e.start + e.duration);
-            }
-            
+            // 实际调度
             let startTime = audioCtx.currentTime + 0.1;
             
-            // 播放所有音符
             for (let e of events) {
                 let osc = audioCtx.createOscillator();
                 let gain = audioCtx.createGain();
@@ -842,49 +914,79 @@
             }
             
             isPlaying = true;
-            statusDiv.textContent = '🎵 播放中...';
-            
-            setTimeout(() => {
-                if (isPlaying) {
-                    statusDiv.textContent = '✅ 播放完成';
-                    isPlaying = false;
-                }
-            }, totalDuration * 1000);
+            playPauseBtn.textContent = '⏸ 暂停';
         }
         
-        window.playMusic_2 = function() {
+        // 更新进度条
+        function startProgressUpdate() {
+            if (progressInterval) cancelAnimationFrame(progressInterval);
+            
+            function update() {
+                if (!isPlaying || !audioCtx) {
+                    progressInterval = null;
+                    return;
+                }
+                let elapsed = audioCtx.currentTime - playStartTime;
+                let percent = Math.min(100, (elapsed / totalDuration) * 100);
+                progressFill.style.width = percent + '%';
+                
+                if (elapsed >= totalDuration) {
+                    // 播放结束
+                    isPlaying = false;
+                    playPauseBtn.textContent = '▶ 播放';
+                    progressFill.style.width = '100%';
+                    cancelAnimationFrame(progressInterval);
+                    progressInterval = null;
+                } else {
+                    progressInterval = requestAnimationFrame(update);
+                }
+            }
+            progressInterval = requestAnimationFrame(update);
+        }
+        
+        window.togglePlay_8 = function() {
             if (!audioCtx) {
                 audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                totalDuration = calculateTotalDuration();
             }
             
-            if (audioCtx.state === 'suspended') {
-                audioCtx.resume();
-            }
-            
-            // 停止之前的播放
-            for (let node of scheduledNodes) {
-                try {
-                    node.gain.gain.cancelScheduledValues(0);
-                    node.gain.gain.setValueAtTime(0, audioCtx.currentTime);
-                    node.osc.stop(audioCtx.currentTime + 0.01);
-                } catch(e) {}
-            }
-            scheduledNodes = [];
-            
-            schedule();
-        };
-        
-        window.pauseMusic_2 = function() {
-            if (audioCtx && audioCtx.state === 'running') {
+            if (isPlaying) {
+                // 暂停
                 audioCtx.suspend();
-                statusDiv.textContent = '⏸ 已暂停';
-            } else if (audioCtx && audioCtx.state === 'suspended') {
-                audioCtx.resume();
-                statusDiv.textContent = '🎵 播放中...';
+                isPlaying = false;
+                playPauseBtn.textContent = '▶ 播放';
+                if (progressInterval) {
+                    cancelAnimationFrame(progressInterval);
+                    progressInterval = null;
+                }
+            } else {
+                // 播放或恢复
+                if (audioCtx.state === 'suspended') {
+                    audioCtx.resume();
+                } else {
+                    // 全新播放，停止之前的调度
+                    for (let node of scheduledNodes) {
+                        try {
+                            node.gain.gain.cancelScheduledValues(0);
+                            node.gain.gain.setValueAtTime(0, audioCtx.currentTime);
+                            node.osc.stop(audioCtx.currentTime + 0.01);
+                        } catch(e) {}
+                    }
+                    scheduledNodes = [];
+                    
+                    // 重新调度
+                    playStartTime = audioCtx.currentTime + 0.1;  // 与schedule内的偏移一致
+                    schedule();
+                }
+                
+                isPlaying = true;
+                playPauseBtn.textContent = '⏸ 暂停';
+                startProgressUpdate();
             }
         };
         
-        window.stopMusic_2 = function() {
+        window.stopMusic_8 = function() {
+            // 停止所有声音
             for (let node of scheduledNodes) {
                 try {
                     node.gain.gain.cancelScheduledValues(0);
@@ -899,7 +1001,13 @@
             }
             
             isPlaying = false;
-            statusDiv.textContent = '⏹ 已停止';
+            playPauseBtn.textContent = '▶ 播放';
+            progressFill.style.width = '0%';
+            
+            if (progressInterval) {
+                cancelAnimationFrame(progressInterval);
+                progressInterval = null;
+            }
         };
     })();
     </script>

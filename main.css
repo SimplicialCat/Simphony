@@ -612,10 +612,7 @@ content: none;
 }
 
 .music-player button {
-    text-decoration: underline;
-    text-decoration-color: var(--color-Furina-vintage-gold); /* 金色 */
-    text-underline-offset: 6px; /* 调整下划线与文字距离 */
-    text-decoration-thickness: 0.7px; /* 线条粗细 */
+    text-decoration: none;
 }
 
 .music-player button:hover {
