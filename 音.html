@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en-US"><head>
 <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
-<meta name="viewport" content="width=device-width"><title>音程</title><link rel="icon" href="./assets/favicon.ico" /><template id="inline-section">
+<meta name="viewport" content="width=device-width"><title>音</title><link rel="icon" href="./assets/favicon.ico" /><template id="inline-section">
   <section class="inline block" data-taxon="">
     <details open="">
       <summary>
@@ -522,202 +522,34 @@
 }
 </style></head><body><header class="header"><nav class="nav"><div class="logo"><span class="cursor-pointer" onclick="window.location.href='./index.html'" title="单纯和声 Simphony">« 单纯和声 Simphony</span></div></nav></header><div id="grid-wrapper" style="grid-template-areas: 'article toc';" data-base-url="./"><nav id="toc" class="sticky-nav mobile-sticky-nav"><div id="theme-options"></div></nav>
 
-<article><section class="block" data-taxon=""><details open><summary id="音程"><header><h1><span class="taxon"></span>音程 <a class="slug" href="./音程.html">[音程]</a></h1><div class="metadata"><ul></ul></div></header></summary>
-<p>音程是两个<span class="link local"><a href="./音.html" title="音 [音]">音</a></span>之间的差距, 以半音为单位. 注意根据具体的场合 (主要是根据<span class="link local"><a href="./调式.html" title="调式 [调式]">调式</a></span>), 同一个数可能对应不同的音程名称.</p>
-<table><thead><tr><th>半音数</th><th>音程的名称</th></tr></thead><tbody>
-<tr><td>$1$</td><td><strong>小二度</strong></td></tr>
-<tr><td>$2$</td><td><strong>大二度</strong> / 减三度</td></tr>
-<tr><td>$3$</td><td>增二度 / <strong>小三度</strong></td></tr>
-<tr><td>$4$</td><td><strong>大三度</strong>/减四度</td></tr>
-<tr><td>$5$</td><td>增三度 / <strong>纯四度</strong></td></tr>
-<tr><td>$6$</td><td>增四度 / 减五度</td></tr>
-<tr><td>$7$</td><td><strong>纯五度</strong> / 减六度</td></tr>
-<tr><td>$8$</td><td>增五度 / <strong>小六度</strong></td></tr>
-<tr><td>$9$</td><td><strong>大六度</strong> / 减七度</td></tr>
-<tr><td>$10$</td><td>增六度 / <strong>小七度</strong></td></tr>
-<tr><td>$11$</td><td><strong>大七度</strong></td></tr>
-<tr><td>$12$</td><td><strong>八度</strong></td></tr>
+<article><section class="block" data-taxon=""><details open><summary id="音"><header><h1><span class="taxon"></span>音 <a class="slug" href="./音.html">[音]</a></h1><div class="metadata"><ul></ul></div></header></summary>
+<p><strong>音</strong> (pitch) 是一个抽象的概念; 音的全体 $\mathsf{P}$ 带有整数加法群 $\mathbb{Z}$ 的作用, 满足对任意两个音 $X,Y$, 存在<strong>唯一</strong>的整数 $n$, 使得 $Y=X+n$; 此时记 $n=Y-X$, 称 $X$ 到 $Y$ 的<strong></strong><span class="link local"><a href="./音程.html" title="音程 [音程]">音程</a></span>为 $n$ 个半音.</p>
+<p>表示一个音所用的符号包括</p>
+<ul>
+<li>升降符号: $\sharp$ (升), $\flat$ (降), $\natural$ (还原), $\sharp\sharp$ (重升), $\flat\flat$ (重降);</li>
+<li>音名: $C,D,E,F,G,A,B$;</li>
+<li>以及一个整数 $N\in \mathbb{Z}$.</li>
+</ul>
+<p>下表显示了各个音与 $C$ 之间的音程.</p>
+<table><thead><tr><th>$x$</th><th>$x-C$</th></tr></thead><tbody>
+<tr><td>$C$</td><td>$0$</td></tr>
+<tr><td>$D$</td><td>$2$</td></tr>
+<tr><td>$E$</td><td>$4$</td></tr>
+<tr><td>$F$</td><td>$5$</td></tr>
+<tr><td>$G$</td><td>$7$</td></tr>
+<tr><td>$A$</td><td>$9$</td></tr>
+<tr><td>$B$</td><td>$11$</td></tr>
 </tbody></table>
-<h3>7 个半音: 纯五度</h3>
-<div id="music-player-1" class="music-player" style="margin:0.5em 0; padding:8px 12px; background:#FAFBFC; border-bottom:2px solid #BD9368;">
-    <div style="margin-bottom:4px;">
-        <button onclick="playMusic_1()" style="background:none; color:#465BCF; border:none; padding:2px 8px; cursor:pointer; font-size:13px;">▶ 播放</button>
-        <button onclick="pauseMusic_1()" style="background:none; color:#6AC6E8; border:none; padding:2px 8px; cursor:pointer; font-size:13px;">⏸ 暂停</button>
-        <button onclick="stopMusic_1()" style="background:none; color:#BD9368; border:none; padding:2px 8px; cursor:pointer; font-size:13px;">⏹ 停止</button>
-    </div>
-    <div id="music-player-1-status" style="color:#8DA4F1; font-size:12px;">准备播放</div>
-    <script>
-    (function() {
-        const data = {"bpm": 120, "key": "C", "parts": [[[{"duration": 1.0, "notes": [{"freq": 261.63, "duration": 1.0}]}, {"duration": 1.0, "notes": [{"freq": 392.0, "duration": 1.0}]}, {"duration": 2.0, "notes": [{"freq": 261.63, "duration": 2.0}, {"freq": 392.0, "duration": 2.0}]}, {"duration": 1.0, "notes": [{"freq": 220.0, "duration": 1.0}]}, {"duration": 1.0, "notes": [{"freq": 329.63, "duration": 1.0}]}, {"duration": 2.0, "notes": [{"freq": 220.0, "duration": 2.0}, {"freq": 329.63, "duration": 2.0}]}]]]};
-        const statusDiv = document.getElementById('music-player-1-status');
-        let audioCtx = null;
-        let scheduledNodes = [];
-        let isPlaying = false;
-        
-        function getBeatDuration() {
-            return 60 / data.bpm;
-        }
-        
-        function schedule() {
-            if (!audioCtx) return;
-            
-            const beat = getBeatDuration();
-            
-            // 收集所有音符事件
-            let events = [];
-            let partStartOffset = 0;
-            
-            for (let pi = 0; pi < data.parts.length; pi++) {
-                let part = data.parts[pi];
-                
-                // 计算这个段落中每个声部的时长
-                let voiceDurations = [];
-                for (let voice of part) {
-                    let voiceDuration = 0;
-                    for (let group of voice) {
-                        if (group.start_offset !== undefined) {
-                            // pedal音符
-                            voiceDuration = Math.max(voiceDuration, group.start_offset + group.duration);
-                        } else {
-                            voiceDuration += group.duration;
-                        }
-                    }
-                    voiceDurations.push(voiceDuration);
-                }
-                
-                // 段落时长取所有声部的最大值
-                let partDuration = Math.max(...voiceDurations);
-                
-                // 处理段落内的所有声部和音符
-                for (let voiceIdx = 0; voiceIdx < part.length; voiceIdx++) {
-                    let voice = part[voiceIdx];
-                    let voiceDuration = voiceDurations[voiceIdx];
-                    
-                    let voiceTime = 0;
-                    for (let group of voice) {
-                        let duration = group.duration * beat;
-                        let startTime;
-                        
-                        if (group.start_offset !== undefined) {
-                            // pedal音符：从段落开始 + start_offset
-                            startTime = partStartOffset + group.start_offset * beat;
-                        } else {
-                            // 普通音符：从段落开始 + 累积位置
-                            startTime = partStartOffset + voiceTime * beat;
-                            voiceTime += group.duration;
-                        }
-                        
-                        // 收集音符
-                        for (let note of group.notes) {
-                            if (note.freq !== null) {
-                                events.push({
-                                    freq: note.freq,
-                                    start: startTime,
-                                    duration: duration
-                                });
-                            }
-                        }
-                    }
-                }
-                
-                // 推进段落偏移量
-                partStartOffset += partDuration * beat;
-            }
-            
-            // 按开始时间排序
-            events.sort((a, b) => a.start - b.start);
-            
-            // 计算总时长
-            let totalDuration = 0;
-            for (let e of events) {
-                totalDuration = Math.max(totalDuration, e.start + e.duration);
-            }
-            
-            let startTime = audioCtx.currentTime + 0.1;
-            
-            // 播放所有音符
-            for (let e of events) {
-                let osc = audioCtx.createOscillator();
-                let gain = audioCtx.createGain();
-                osc.type = 'triangle';
-                osc.frequency.value = e.freq;
-                osc.connect(gain);
-                gain.connect(audioCtx.destination);
-                
-                let noteStart = startTime + e.start;
-                let noteEnd = noteStart + e.duration;
-                
-                gain.gain.setValueAtTime(0, noteStart);
-                gain.gain.linearRampToValueAtTime(0.4, noteStart + 0.01);
-                gain.gain.linearRampToValueAtTime(0.24, noteStart + 0.1);
-                gain.gain.linearRampToValueAtTime(0, noteEnd);
-                
-                osc.start(noteStart);
-                osc.stop(noteEnd);
-                scheduledNodes.push({osc, gain});
-            }
-            
-            isPlaying = true;
-            statusDiv.textContent = '🎵 播放中...';
-            
-            setTimeout(() => {
-                if (isPlaying) {
-                    statusDiv.textContent = '✅ 播放完成';
-                    isPlaying = false;
-                }
-            }, totalDuration * 1000);
-        }
-        
-        window.playMusic_1 = function() {
-            if (!audioCtx) {
-                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-            }
-            
-            if (audioCtx.state === 'suspended') {
-                audioCtx.resume();
-            }
-            
-            // 停止之前的播放
-            for (let node of scheduledNodes) {
-                try {
-                    node.gain.gain.cancelScheduledValues(0);
-                    node.gain.gain.setValueAtTime(0, audioCtx.currentTime);
-                    node.osc.stop(audioCtx.currentTime + 0.01);
-                } catch(e) {}
-            }
-            scheduledNodes = [];
-            
-            schedule();
-        };
-        
-        window.pauseMusic_1 = function() {
-            if (audioCtx && audioCtx.state === 'running') {
-                audioCtx.suspend();
-                statusDiv.textContent = '⏸ 已暂停';
-            } else if (audioCtx && audioCtx.state === 'suspended') {
-                audioCtx.resume();
-                statusDiv.textContent = '🎵 播放中...';
-            }
-        };
-        
-        window.stopMusic_1 = function() {
-            for (let node of scheduledNodes) {
-                try {
-                    node.gain.gain.cancelScheduledValues(0);
-                    node.gain.gain.setValueAtTime(0, audioCtx.currentTime);
-                    node.osc.stop(audioCtx.currentTime + 0.01);
-                } catch(e) {}
-            }
-            scheduledNodes = [];
-            
-            if (audioCtx) {
-                audioCtx.suspend();
-            }
-            
-            isPlaying = false;
-            statusDiv.textContent = '⏹ 已停止';
-        };
-    })();
-    </script>
-</div>
-</details></section><footer><section class="block link-list" id="backlinks"><details open><summary><header><h1>Backlinks</h1></header></summary><section class="block" data-taxon="" style="margin-bottom: 0.4em;"><header><h1><span class="taxon"></span>单纯和声 Simphony <a class="slug" href="./index.html">[index]</a></h1><div class="metadata"><ul></ul></div></header></section><section class="block" data-taxon="" style="margin-bottom: 0.4em;"><header><h1><span class="taxon"></span>调式 <a class="slug" href="./调式.html">[调式]</a></h1><div class="metadata"><ul></ul></div></header></section><section class="block" data-taxon="" style="margin-bottom: 0.4em;"><header><h1><span class="taxon"></span>音 <a class="slug" href="./音.html">[音]</a></h1><div class="metadata"><ul></ul></div></header></section></details></section></footer></article></div></body></html>
+<p>音符后跟的整数每增加 $1$ 相当于 $+12$:
+$$
+C1 = C0 + 12.
+$$</p>
+<p>音符前的每个升号 $\sharp$ 相当于 $+1$, 每个降号 $\flat$ 相当于 $-1$, 还原符号 $\natural$ 的作用是取消所有升号与降号的作用.</p>
+<table><thead><tr><th>$x$</th><th>$x-C$</th></tr></thead><tbody>
+<tr><td>$\flat\flat C$</td><td>$-2$</td></tr>
+<tr><td>$\flat C$</td><td>$-1$</td></tr>
+<tr><td>$C$</td><td>$0$</td></tr>
+<tr><td>$\sharp C$</td><td>$1$</td></tr>
+<tr><td>$\sharp\sharp C$</td><td>$2$</td></tr>
+</tbody></table>
+</details></section><footer><section class="block link-list" id="backlinks"><details open><summary><header><h1>Backlinks</h1></header></summary><section class="block" data-taxon="" style="margin-bottom: 0.4em;"><header><h1><span class="taxon"></span>单纯和声 Simphony <a class="slug" href="./index.html">[index]</a></h1><div class="metadata"><ul></ul></div></header></section><section class="block" data-taxon="" style="margin-bottom: 0.4em;"><header><h1><span class="taxon"></span>音程 <a class="slug" href="./音程.html">[音程]</a></h1><div class="metadata"><ul></ul></div></header></section></details></section></footer></article></div></body></html>
