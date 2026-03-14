@@ -1,0 +1,707 @@
+<!DOCTYPE html>
+<html lang="en-US"><head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<meta name="viewport" content="width=device-width"><title>平凡理想</title><link rel="icon" href="./assets/favicon.ico" /><template id="inline-section">
+  <section class="inline block" data-taxon="">
+    <details open="">
+      <summary>
+        <header>
+          <h1>
+            <span class="taxon"></span>
+            <div id="title"></div>
+          </h1>
+        </header>
+      </summary>
+      <div id="content"></div>
+    </details>
+  </section>
+</template>
+
+<script>
+  function inlineSection(template, section, taxon, title) {
+    taxon = taxon || section.getAttribute("taxon") || null;
+    title = title || section.getAttribute("title") || "";
+
+    const clone = template.content.cloneNode(true);
+    clone.querySelector("section").dataset.taxon = taxon;
+    clone.querySelector(".taxon").textContent = taxon ? `${taxon}. ` : "";
+    clone.querySelector("#title").replaceWith(title);
+    clone.querySelector("#content").replaceWith(...section.childNodes);
+
+    if (section.hasAttribute("close")) {
+      clone.querySelector("details").removeAttribute("open");
+    }
+    
+    section.replaceWith(clone);
+  }
+
+  const tagTaxonTable = {
+    "exegesis": "Exegesis",
+    "definition": "Definition",
+    "proposition": "Proposition",
+    "remark": "Remark",
+    "conjecture": "Conjecture",
+    "postulate": "Postulate",
+    "claim": "Claim",
+    "observation": "Observation",
+    "fact": "Fact",
+    "hypothesis": "Hypothesis",
+    "axiom": "Axiom",
+    "lemma": "Lemma",
+    "theorem": "Theorem",
+    "corollary": "Corollary",
+    "example": "Example", 
+    "proof": "Proof",
+  };
+
+  document.addEventListener("DOMContentLoaded", () => {
+    const template = document.getElementById("inline-section");
+
+    [...document.getElementsByTagName("block")].forEach(section => inlineSection(template, section));
+
+    Object.entries(tagTaxonTable).forEach(([tag, taxon]) => {
+      [...document.getElementsByTagName(tag)].forEach(section => inlineSection(template, section, taxon));
+    });
+  });
+</script><script>
+  function toggleDetailsOpen() {
+    const details = document.querySelector("#toc>div>details");
+    if (!details) return;
+
+    if (window.matchMedia("(max-width: 1000px)").matches) {
+      details.removeAttribute("open");
+    } else {
+      details.setAttribute("open", "");
+    }
+  }
+
+  document.addEventListener("DOMContentLoaded", toggleDetailsOpen);
+  window.addEventListener("resize", toggleDetailsOpen);
+</script><style>
+  theme-option {
+    display: inline-block;
+  }
+
+  theme-option>input {
+    display: none;
+  }
+
+  theme-option>label {
+    color: var(--slug-color);
+  }
+
+  theme-option>label:hover {
+    background-color: var(--hover-color-link);
+  }
+
+  theme-option:has(input:checked)>label {
+    color: var(--link-color);
+  }
+
+  theme-option>label::before {
+    content: "[";
+    color: rgba(0, 0, 0, 0);
+  }
+
+  theme-option>label::after {
+    content: "]";
+    color: rgba(0, 0, 0, 0);
+  }
+
+  theme-option:has(input:checked)>label::before {
+    color: var(--link-color);
+  }
+
+  theme-option:has(input:checked)>label::after {
+    color: var(--link-color);
+  }
+</style>
+
+<template id="theme-option-template">
+  <input type="radio" name="theme" />
+  <label></label>
+</template>
+
+<script>
+  const THEME_KEY = `kodama-theme`;
+
+  function storeSelectedTheme(name) {
+    localStorage.setItem(THEME_KEY, name);
+  }
+
+  function getCurrentTheme() {
+    return localStorage.getItem(THEME_KEY) || window.primaryTheme;
+  }
+
+  function selectTheme(themeName) {
+    storeSelectedTheme(themeName);
+    requestAnimationFrame(applyDynamicColorInvert);
+  }
+
+  function applyFavorTheme() {
+    const favoredTheme = getCurrentTheme();
+    if (favoredTheme) {
+      const selector = `input[type='radio'][id='${favoredTheme}']`;
+      const favoredOption = window.themeOptions.querySelector(selector);
+
+      if (favoredOption) {
+        favoredOption.checked = true;
+      } else if (window.primaryOption) {
+        // Fallback to primary theme, if the favored theme is not found
+        // e.g., when the theme options have changed, and the stored theme is no longer available.
+        window.primaryOption.checked = true;
+      }
+    }
+    applyDynamicColorInvert();
+  }
+
+  document.addEventListener("DOMContentLoaded", function () {
+    window.themeOptions = document.getElementById("theme-options");
+    const templateContent = document.getElementById("theme-option-template").content;
+
+    customElements.define(
+      "theme-option",
+      class extends HTMLElement {
+        constructor() {
+          super();
+
+          const node = templateContent.cloneNode(true);
+          const themeName = this.getAttribute("name");
+
+          const input = node.querySelector("input");
+          input.setAttribute("id", themeName);
+          input.setAttribute("value", themeName);
+
+          const label = node.querySelector("label");
+          label.setAttribute("for", themeName);
+          label.addEventListener("click", () => selectTheme(themeName));
+
+          while (this.firstChild) {
+            label.appendChild(this.firstChild);
+          }
+          this.appendChild(node);
+        }
+      },
+    );
+
+    window.primaryOption = window.themeOptions.querySelector("input[type='radio']");
+    window.primaryTheme = primaryOption?.value;
+
+    applyFavorTheme();
+  });
+</script>
+
+<script>
+  const clamp = (value) => Math.max(0, Math.min(255, value));
+
+  const multiply = ([r, g, b], matrix) => {
+    const nr = clamp(r * matrix[0] + g * matrix[1] + b * matrix[2]);
+    const ng = clamp(r * matrix[3] + g * matrix[4] + b * matrix[5]);
+    const nb = clamp(r * matrix[6] + g * matrix[7] + b * matrix[8]);
+    return [nr, ng, nb];
+  };
+
+  const hueRotate = ([r, g, b], angle = 0) => {
+    const rad = (angle / 180) * Math.PI;
+    const sin = Math.sin(rad);
+    const cos = Math.cos(rad);
+    const matrix = [
+      0.213 + cos * 0.787 - sin * 0.213,
+      0.715 - cos * 0.715 - sin * 0.715,
+      0.072 - cos * 0.072 + sin * 0.928,
+      0.213 - cos * 0.213 + sin * 0.143,
+      0.715 + cos * 0.285 + sin * 0.140,
+      0.072 - cos * 0.072 - sin * 0.283,
+      0.213 - cos * 0.213 - sin * 0.787,
+      0.715 - cos * 0.715 + sin * 0.715,
+      0.072 + cos * 0.928 + sin * 0.072,
+    ];
+    return multiply([r, g, b], matrix);
+  };
+
+  const grayscale = ([r, g, b], value = 1) => {
+    const matrix = [
+      0.2126 + 0.7874 * (1 - value),
+      0.7152 - 0.7152 * (1 - value),
+      0.0722 - 0.0722 * (1 - value),
+      0.2126 - 0.2126 * (1 - value),
+      0.7152 + 0.2848 * (1 - value),
+      0.0722 - 0.0722 * (1 - value),
+      0.2126 - 0.2126 * (1 - value),
+      0.7152 - 0.7152 * (1 - value),
+      0.0722 + 0.9278 * (1 - value),
+    ];
+    return multiply([r, g, b], matrix);
+  };
+
+  const sepia = ([r, g, b], value = 1) => {
+    const matrix = [
+      0.393 + 0.607 * (1 - value),
+      0.769 - 0.769 * (1 - value),
+      0.189 - 0.189 * (1 - value),
+      0.349 - 0.349 * (1 - value),
+      0.686 + 0.314 * (1 - value),
+      0.168 - 0.168 * (1 - value),
+      0.272 - 0.272 * (1 - value),
+      0.534 - 0.534 * (1 - value),
+      0.131 + 0.869 * (1 - value),
+    ];
+    return multiply([r, g, b], matrix);
+  };
+
+  const saturate = ([r, g, b], value = 1) => {
+    const matrix = [
+      0.213 + 0.787 * value,
+      0.715 - 0.715 * value,
+      0.072 - 0.072 * value,
+      0.213 - 0.213 * value,
+      0.715 + 0.285 * value,
+      0.072 - 0.072 * value,
+      0.213 - 0.213 * value,
+      0.715 - 0.715 * value,
+      0.072 + 0.928 * value,
+    ];
+    return multiply([r, g, b], matrix);
+  };
+
+  const linear = ([r, g, b], slope = 1, intercept = 0) => {
+    const scale = 255;
+    return [
+      clamp(r * slope + intercept * scale),
+      clamp(g * slope + intercept * scale),
+      clamp(b * slope + intercept * scale),
+    ];
+  };
+
+  const brightness = (rgb, value = 1) => linear(rgb, value);
+  const contrast = (rgb, value = 1) => linear(rgb, value, -0.5 * value + 0.5);
+
+  const invert = ([r, g, b], value = 1) => {
+    const nr = (value + r / 255 * (1 - 2 * value)) * 255;
+    const ng = (value + g / 255 * (1 - 2 * value)) * 255;
+    const nb = (value + b / 255 * (1 - 2 * value)) * 255;
+    return [clamp(nr), clamp(ng), clamp(nb)];
+  };
+
+  // Code taken from https://stackoverflow.com/a/9493060/2688027, licensed under CC BY-SA.
+  const rgbToHsl = (r, g, b) => {
+    r /= 255; g /= 255; b /= 255;
+    const max = Math.max(r, g, b);
+    const min = Math.min(r, g, b);
+    let h, s, l = (max + min) / 2;
+    if (max === min) {
+      h = s = 0;
+    } else {
+      const d = max - min;
+      s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+      switch (max) {
+        case r: h = (g - b) / d + (g < b ? 6 : 0); break;
+        case g: h = (b - r) / d + 2; break;
+        case b: h = (r - g) / d + 4; break;
+      }
+      h /= 6;
+    }
+    return { h: h * 100, s: s * 100, l: l * 100 };
+  };
+
+  const applyFilters = (rgb, [inv, sep, sat, hue, bri, con]) => {
+    let color = [...rgb];
+    color = invert(color, inv / 100);
+    color = sepia(color, sep / 100);
+    color = saturate(color, sat / 100);
+    color = hueRotate(color, hue * 3.6);
+    color = brightness(color, bri / 100);
+    color = contrast(color, con / 100);
+    return color;
+  };
+
+  const lossFn = (targetRgb, filters) => {
+    const resultRgb = applyFilters([0, 0, 0], filters);
+    const targetHsl = rgbToHsl(...targetRgb);
+    const resultHsl = rgbToHsl(...resultRgb);
+    return (
+      Math.abs(resultRgb[0] - targetRgb[0]) +
+      Math.abs(resultRgb[1] - targetRgb[1]) +
+      Math.abs(resultRgb[2] - targetRgb[2]) +
+      Math.abs(resultHsl.h - targetHsl.h) +
+      Math.abs(resultHsl.s - targetHsl.s) +
+      Math.abs(resultHsl.l - targetHsl.l)
+    );
+  };
+
+  const fix = (value, idx) => {
+    let max = 100;
+    if (idx === 2) max = 7500;                  // saturate
+    else if (idx === 4 || idx === 5) max = 200; // brightness, contrast
+    if (idx === 3) { // hue-rotate
+      if (value > max) return value % max;
+      if (value < 0) return max + (value % max);
+      return value;
+    }
+    return Math.max(0, Math.min(max, value));
+  };
+
+  const spsa = (targetRgb, A, a, c, initial, iters) => {
+    const alpha = 1;
+    const gamma = 1 / 6;
+    let values = [...initial];
+    let best = [...values];
+    let bestLoss = Infinity;
+
+    for (let k = 0; k < iters; k++) {
+      const ck = c / Math.pow(k + 1, gamma);
+      const deltas = Array(6).fill().map(() => (Math.random() > 0.5 ? 1 : -1));
+      const highArgs = values.map((v, i) => v + ck * deltas[i]);
+      const lowArgs = values.map((v, i) => v - ck * deltas[i]);
+      const lossDiff = lossFn(targetRgb, highArgs) - lossFn(targetRgb, lowArgs);
+
+      values = values.map((v, i) => {
+        const g = (lossDiff / (2 * ck)) * deltas[i];
+        const ak = a[i] / Math.pow(A + k + 1, alpha);
+        return fix(v - ak * g, i);
+      });
+
+      const loss = lossFn(targetRgb, values);
+      if (loss < bestLoss) {
+        best = [...values];
+        bestLoss = loss;
+      }
+    }
+    return { values: best, loss: bestLoss };
+  };
+
+  // Threshold for acceptable color loss. This value determines when the SPSA algorithm stops early.
+  // A loss below this value is considered visually indistinguishable for most use cases.
+  // The value 25 was determined empirically to balance performance and color accuracy.
+  const ACCEPTABLE_COLOR_LOSS = 25;
+
+  const solveWide = (targetRgb) => {
+    const A = 5;
+    const c = 15;
+    const a = [60, 180, 18000, 600, 1.2, 1.2];
+    let best = { loss: Infinity, values: null };
+    for (let i = 0; best.loss > ACCEPTABLE_COLOR_LOSS && i < 3; i++) {
+      const initial = [50, 20, 3750, 50, 100, 100];
+      const result = spsa(targetRgb, A, a, c, initial, 1000);
+      if (result.loss < best.loss) best = result;
+    }
+    return best;
+  };
+
+  const solveNarrow = (targetRgb, wideResult) => {
+    const A = wideResult.loss;
+    const c = 2;
+    const A1 = A + 1;
+    const a = [0.25 * A1, 0.25 * A1, A1, 0.25 * A1, 0.2 * A1, 0.2 * A1];
+    return spsa(targetRgb, A, a, c, wideResult.values, 500);
+  };
+
+  const cssFilterString = (filters) => {
+    const [inv, sep, sat, hue, bri, con] = filters.map(Math.round);
+    const hueDeg = Math.round(hue * 3.6);
+    return `filter: invert(${inv}%) sepia(${sep}%) saturate(${sat}%) hue-rotate(${hueDeg}deg) brightness(${bri}%) contrast(${con}%);`;
+  };
+
+  const solveColor = (targetRgb) => {
+    const wide = solveWide(targetRgb);
+    const narrow = solveNarrow(targetRgb, wide);
+    return {
+      values: narrow.values,
+      loss: narrow.loss,
+      filter: cssFilterString(narrow.values),
+    };
+  };
+
+  // Reuse a single canvas / context to avoid memory leaks
+  const colorParseCanvas = document.createElement('canvas');
+  colorParseCanvas.width = 1;
+  colorParseCanvas.height = 1;
+  const colorParseContext = colorParseCanvas.getContext('2d');
+
+  const toRGBArray = (cssColor) => {
+    colorParseContext.fillStyle = cssColor;
+    colorParseContext.fillRect(0, 0, 1, 1);
+
+    // The `getImageData().data` returns a Uint8ClampedArray with 4 values per pixel (RGBA). 
+    // also see: https://developer.mozilla.org/zh-CN/docs/Web/API/ImageData/data
+    const rgba = colorParseContext.getImageData(0, 0, 1, 1).data;
+    return Array.from(rgba.slice(0, 3));
+  };
+
+  const DYNAMIC_STYLE_ID = 'dynamic-color-invert-style';
+  const SOLVED_COLOR_KEY = "solved-";
+
+  function memorizedSolvedFilter(color) {
+    const colorKey = SOLVED_COLOR_KEY + color;
+    const storedFilterOption = localStorage.getItem(colorKey);
+    if (storedFilterOption) {
+      return storedFilterOption;
+    } else {
+      const filter = solveColor(color).filter;
+      localStorage.setItem(colorKey, filter);
+      return filter;
+    }
+  }
+
+  function applyDynamicColorInvert() {
+    const textColor = getComputedStyle(document.body).getPropertyValue('--text-color');
+    if (textColor && textColor.length > 0) {
+      const rgb = toRGBArray(textColor);
+      const filter = memorizedSolvedFilter(rgb);
+
+      const existingStyle = document.getElementById(DYNAMIC_STYLE_ID);
+      if (existingStyle) {
+        existingStyle.textContent = `.color-invert {${filter}}`;
+      } else {
+        const style = document.createElement('style');
+        style.id = DYNAMIC_STYLE_ID;
+        style.textContent = `.color-invert {${filter}}`;
+        document.head.appendChild(style);
+      }
+    }
+  }
+</script><script>
+  (() => {
+    const url = "/kodama.json";
+    const interval = 1000; // 1 second
+
+    let lastModified = null;
+
+    async function check() {
+      try {
+        const res = await fetch(url + "?t=" + Date.now(), {
+          method: "HEAD",
+          cache: "no-store",
+        });
+
+        const lm = res.headers.get("last-modified");
+
+        if (lastModified && lm && lm !== lastModified) {
+          location.reload();
+          return;
+        }
+
+        lastModified = lm || lastModified;
+      } catch (e) {
+        // Ignore
+        console.warn("Reload check failed:", e);
+      }
+
+      setTimeout(check, interval);
+    }
+
+    check();
+  })();
+</script><!-- Also see: https://katex.org/docs/autorender -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.25/dist/katex.min.css" integrity="sha384-WcoG4HRXMzYzfCgiyfrySxx90XSl2rxY5mnVY5TwtWE6KLrArNKn0T/mOgNL0Mmi" crossorigin="anonymous">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.25/dist/katex.min.js" integrity="sha384-J+9dG2KMoiR9hqcFao0IBLwxt6zpcyN68IgwzsCSkbreXUjmNVRhPFTssqdSGjwQ" crossorigin="anonymous"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.25/dist/contrib/auto-render.min.js" integrity="sha384-hCXGrW6PitJEwbkoStFjeJxv+fSOOQKOPbJxSfM6G5sWZjAyWhXiTIIAmQqnlLlh" crossorigin="anonymous"></script>
+<!-- Also see: https://github.com/KaTeX/KaTeX/tree/main/contrib/copy-tex -->
+<script src="https://cdn.jsdelivr.net/npm/katex@0.16.25/dist/contrib/copy-tex.min.js" integrity="sha384-HORx6nWi8j5/mYA+y57/9/CZc5z8HnEw4WUZWy5yOn9ToKBv1l58vJaufFAn9Zzi" crossorigin="anonymous"></script>
+
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    renderMathInElement(document.body, {
+      delimiters: [
+        { left: "$$", right: "$$", display: true },
+        { left: "$", right: "$", display: false },
+        { left: "\\(", right: "\\)", display: false },
+        { left: "\\[", right: "\\]", display: true },
+      ],
+      trust: true,
+      strict: false,
+      throwOnError: false,
+      minRuleThickness: 0.05,
+    });
+  });
+</script>
+<link rel="stylesheet" href="./main.css"><style>
+@media only screen and (min-width: 1000px) {
+  #grid-wrapper { grid-template-columns: var(--article-max-width) var(--toc-max-width); }
+  nav#toc { max-width: 45ex; }
+}
+</style></head><body><header class="header"><nav class="nav"><div class="logo"><span class="cursor-pointer" onclick="window.location.href='./index.html'" title="单纯和声 Simphony">« 单纯和声 Simphony</span></div></nav></header><div id="grid-wrapper" style="grid-template-areas: 'article toc';" data-base-url="./"><nav id="toc" class="sticky-nav mobile-sticky-nav"><div id="theme-options"></div></nav>
+
+<article><section class="block" data-taxon=""><details open><summary id="平凡理想"><header><h1><span class="taxon"></span>平凡理想 <a class="slug" href="./平凡理想.html">[平凡理想]</a></h1><div class="metadata"><ul></ul></div></header></summary>
+<div id="music-player-1" class="music-player" style="margin:0.5em 0; padding:8px 12px; background:#FAFBFC;">
+    <div style="margin-bottom:4px;">
+        <button onclick="playMusic_1()" style="background:none; color:#465BCF; border:none; padding:2px 8px; cursor:pointer; font-size:13px;">▶ 播放</button>
+        <button onclick="pauseMusic_1()" style="background:none; color:#6AC6E8; border:none; padding:2px 8px; cursor:pointer; font-size:13px;">⏸ 暂停</button>
+        <button onclick="stopMusic_1()" style="background:none; color:#BD9368; border:none; padding:2px 8px; cursor:pointer; font-size:13px;">⏹ 停止</button>
+    </div>
+    <div id="music-player-1-status" style="color:#8DA4F1; font-size:12px;">准备播放</div>
+    <script>
+    (function() {
+        const data = {"bpm": 228, "key": "C", "parts": [[[{"duration": 2.0, "notes": [{"freq": 392.0, "duration": 2.0}]}]], [[{"duration": 4.0, "notes": [{"freq": 523.26, "duration": 4.0}]}, {"duration": 1.0, "notes": [{"freq": 493.89, "duration": 1.0}]}, {"duration": 1.0, "notes": [{"freq": 523.26, "duration": 1.0}]}, {"duration": 4.0, "notes": [{"freq": 587.34, "duration": 4.0}]}, {"duration": 2.0, "notes": [{"freq": 392.0, "duration": 2.0}]}], [{"duration": 6.0, "start_offset": 0, "notes": [{"freq": 130.81, "duration": 6.0}]}, {"duration": 5.0, "start_offset": 1.0, "notes": [{"freq": 196.0, "duration": 5.0}]}, {"duration": 4.0, "start_offset": 2.0, "notes": [{"freq": 293.67, "duration": 4.0}]}, {"duration": 3.0, "start_offset": 3.0, "notes": [{"freq": 329.63, "duration": 3.0}]}, {"duration": 2.0, "start_offset": 4.0, "notes": [{"freq": null, "duration": 2.0}]}, {"duration": 1.0, "start_offset": 5.0, "notes": [{"freq": null, "duration": 1.0}]}, {"duration": 6.0, "start_offset": 6.0, "notes": [{"freq": 164.82, "duration": 6.0}]}, {"duration": 5.0, "start_offset": 7.0, "notes": [{"freq": 196.0, "duration": 5.0}]}, {"duration": 4.0, "start_offset": 8.0, "notes": [{"freq": 246.95, "duration": 4.0}]}, {"duration": 3.0, "start_offset": 9.0, "notes": [{"freq": 293.67, "duration": 3.0}]}, {"duration": 2.0, "start_offset": 10.0, "notes": [{"freq": null, "duration": 2.0}]}, {"duration": 1.0, "start_offset": 11.0, "notes": [{"freq": null, "duration": 1.0}]}]], [[{"duration": 4.0, "notes": [{"freq": 523.26, "duration": 4.0}]}, {"duration": 1.0, "notes": [{"freq": 493.89, "duration": 1.0}]}, {"duration": 1.0, "notes": [{"freq": 440.01, "duration": 1.0}]}, {"duration": 4.0, "notes": [{"freq": 392.0, "duration": 4.0}]}, {"duration": 2.0, "notes": [{"freq": 392.0, "duration": 2.0}]}], [{"duration": 6.0, "start_offset": 0, "notes": [{"freq": 174.62, "duration": 6.0}]}, {"duration": 5.0, "start_offset": 1.0, "notes": [{"freq": 261.63, "duration": 5.0}]}, {"duration": 4.0, "start_offset": 2.0, "notes": [{"freq": 349.23, "duration": 4.0}]}, {"duration": 3.0, "start_offset": 3.0, "notes": [{"freq": 392.0, "duration": 3.0}]}, {"duration": 2.0, "start_offset": 4.0, "notes": [{"freq": null, "duration": 2.0}]}, {"duration": 1.0, "start_offset": 5.0, "notes": [{"freq": null, "duration": 1.0}]}, {"duration": 6.0, "start_offset": 6.0, "notes": [{"freq": 196.0, "duration": 6.0}]}, {"duration": 5.0, "start_offset": 7.0, "notes": [{"freq": 246.95, "duration": 5.0}]}, {"duration": 4.0, "start_offset": 8.0, "notes": [{"freq": 293.67, "duration": 4.0}]}, {"duration": 3.0, "start_offset": 9.0, "notes": [{"freq": 349.23, "duration": 3.0}]}, {"duration": 2.0, "start_offset": 10.0, "notes": [{"freq": null, "duration": 2.0}]}, {"duration": 1.0, "start_offset": 11.0, "notes": [{"freq": null, "duration": 1.0}]}]], [[{"duration": 4.0, "notes": [{"freq": 523.26, "duration": 4.0}]}, {"duration": 1.0, "notes": [{"freq": 493.89, "duration": 1.0}]}, {"duration": 1.0, "notes": [{"freq": 440.01, "duration": 1.0}]}, {"duration": 4.0, "notes": [{"freq": 392.0, "duration": 4.0}]}, {"duration": 1.0, "notes": [{"freq": 293.67, "duration": 1.0}]}, {"duration": 1.0, "notes": [{"freq": 329.63, "duration": 1.0}]}], [{"duration": 6.0, "start_offset": 0, "notes": [{"freq": 130.81, "duration": 6.0}]}, {"duration": 5.0, "start_offset": 1.0, "notes": [{"freq": 196.0, "duration": 5.0}]}, {"duration": 4.0, "start_offset": 2.0, "notes": [{"freq": 293.67, "duration": 4.0}]}, {"duration": 3.0, "start_offset": 3.0, "notes": [{"freq": 329.63, "duration": 3.0}]}, {"duration": 2.0, "start_offset": 4.0, "notes": [{"freq": null, "duration": 2.0}]}, {"duration": 1.0, "start_offset": 5.0, "notes": [{"freq": null, "duration": 1.0}]}, {"duration": 6.0, "start_offset": 6.0, "notes": [{"freq": 164.82, "duration": 6.0}]}, {"duration": 5.0, "start_offset": 7.0, "notes": [{"freq": 196.0, "duration": 5.0}]}, {"duration": 4.0, "start_offset": 8.0, "notes": [{"freq": 246.95, "duration": 4.0}]}, {"duration": 3.0, "start_offset": 9.0, "notes": [{"freq": 293.67, "duration": 3.0}]}, {"duration": 2.0, "start_offset": 10.0, "notes": [{"freq": null, "duration": 2.0}]}, {"duration": 1.0, "start_offset": 11.0, "notes": [{"freq": null, "duration": 1.0}]}]], [[{"duration": 3.0, "notes": [{"freq": 349.23, "duration": 3.0}]}, {"duration": 1.0, "notes": [{"freq": 392.0, "duration": 1.0}]}, {"duration": 1.0, "notes": [{"freq": 293.67, "duration": 1.0}]}, {"duration": 1.0, "notes": [{"freq": 329.63, "duration": 1.0}]}, {"duration": 4.0, "notes": [{"freq": 293.67, "duration": 4.0}]}, {"duration": 2.0, "notes": [{"freq": 392.0, "duration": 2.0}]}], [{"duration": 6.0, "start_offset": 0, "notes": [{"freq": 146.83, "duration": 6.0}]}, {"duration": 5.0, "start_offset": 1.0, "notes": [{"freq": 220.0, "duration": 5.0}]}, {"duration": 4.0, "start_offset": 2.0, "notes": [{"freq": 261.63, "duration": 4.0}]}, {"duration": 3.0, "start_offset": 3.0, "notes": [{"freq": 349.23, "duration": 3.0}]}, {"duration": 2.0, "start_offset": 4.0, "notes": [{"freq": null, "duration": 2.0}]}, {"duration": 1.0, "start_offset": 5.0, "notes": [{"freq": null, "duration": 1.0}]}, {"duration": 6.0, "start_offset": 6.0, "notes": [{"freq": 196.0, "duration": 6.0}]}, {"duration": 5.0, "start_offset": 7.0, "notes": [{"freq": 246.95, "duration": 5.0}]}, {"duration": 4.0, "start_offset": 8.0, "notes": [{"freq": 293.67, "duration": 4.0}]}, {"duration": 3.0, "start_offset": 9.0, "notes": [{"freq": 349.23, "duration": 3.0}]}, {"duration": 2.0, "start_offset": 10.0, "notes": [{"freq": null, "duration": 2.0}]}, {"duration": 1.0, "start_offset": 11.0, "notes": [{"freq": null, "duration": 1.0}]}]], [[{"duration": 4.0, "notes": [{"freq": 523.26, "duration": 4.0}]}, {"duration": 1.0, "notes": [{"freq": 493.89, "duration": 1.0}]}, {"duration": 1.0, "notes": [{"freq": 523.26, "duration": 1.0}]}, {"duration": 4.0, "notes": [{"freq": 784.0, "duration": 4.0}]}, {"duration": 2.0, "notes": [{"freq": 523.26, "duration": 2.0}]}], [{"duration": 6.0, "start_offset": 0, "notes": [{"freq": 130.81, "duration": 6.0}]}, {"duration": 5.0, "start_offset": 1.0, "notes": [{"freq": 196.0, "duration": 5.0}]}, {"duration": 4.0, "start_offset": 2.0, "notes": [{"freq": 293.67, "duration": 4.0}]}, {"duration": 3.0, "start_offset": 3.0, "notes": [{"freq": 329.63, "duration": 3.0}]}, {"duration": 2.0, "start_offset": 4.0, "notes": [{"freq": null, "duration": 2.0}]}, {"duration": 1.0, "start_offset": 5.0, "notes": [{"freq": null, "duration": 1.0}]}, {"duration": 6.0, "start_offset": 6.0, "notes": [{"freq": 164.82, "duration": 6.0}]}, {"duration": 5.0, "start_offset": 7.0, "notes": [{"freq": 196.0, "duration": 5.0}]}, {"duration": 4.0, "start_offset": 8.0, "notes": [{"freq": 246.95, "duration": 4.0}]}, {"duration": 3.0, "start_offset": 9.0, "notes": [{"freq": 293.67, "duration": 3.0}]}, {"duration": 2.0, "start_offset": 10.0, "notes": [{"freq": null, "duration": 2.0}]}, {"duration": 1.0, "start_offset": 11.0, "notes": [{"freq": null, "duration": 1.0}]}]], [[{"duration": 4.0, "notes": [{"freq": 880.01, "duration": 4.0}]}, {"duration": 1.0, "notes": [{"freq": 880.01, "duration": 1.0}]}, {"duration": 1.0, "notes": [{"freq": 987.78, "duration": 1.0}]}, {"duration": 4.0, "notes": [{"freq": 1046.52, "duration": 4.0}]}, {"duration": 1.0, "notes": [{"freq": 987.78, "duration": 1.0}]}, {"duration": 1.0, "notes": [{"freq": 880.01, "duration": 1.0}]}], [{"duration": 6.0, "start_offset": 0, "notes": [{"freq": 174.62, "duration": 6.0}]}, {"duration": 5.0, "start_offset": 1.0, "notes": [{"freq": 261.63, "duration": 5.0}]}, {"duration": 4.0, "start_offset": 2.0, "notes": [{"freq": 349.23, "duration": 4.0}]}, {"duration": 3.0, "start_offset": 3.0, "notes": [{"freq": 440.01, "duration": 3.0}]}, {"duration": 2.0, "start_offset": 4.0, "notes": [{"freq": null, "duration": 2.0}]}, {"duration": 1.0, "start_offset": 5.0, "notes": [{"freq": null, "duration": 1.0}]}, {"duration": 6.0, "start_offset": 6.0, "notes": [{"freq": 174.62, "duration": 6.0}]}, {"duration": 5.0, "start_offset": 7.0, "notes": [{"freq": 207.66, "duration": 5.0}]}, {"duration": 4.0, "start_offset": 8.0, "notes": [{"freq": 261.63, "duration": 4.0}]}, {"duration": 3.0, "start_offset": 9.0, "notes": [{"freq": 349.23, "duration": 3.0}]}, {"duration": 2.0, "start_offset": 10.0, "notes": [{"freq": null, "duration": 2.0}]}, {"duration": 1.0, "start_offset": 11.0, "notes": [{"freq": null, "duration": 1.0}]}]], [[{"duration": 4.0, "notes": [{"freq": 784.0, "duration": 4.0}]}, {"duration": 1.0, "notes": [{"freq": 659.27, "duration": 1.0}]}, {"duration": 1.0, "notes": [{"freq": 587.34, "duration": 1.0}]}, {"duration": 4.0, "notes": [{"freq": 523.26, "duration": 4.0}]}, {"duration": 1.0, "notes": [{"freq": 587.34, "duration": 1.0}]}, {"duration": 1.0, "notes": [{"freq": 659.27, "duration": 1.0}]}], [{"duration": 6.0, "start_offset": 0, "notes": [{"freq": 164.82, "duration": 6.0}]}, {"duration": 5.0, "start_offset": 1.0, "notes": [{"freq": 196.0, "duration": 5.0}]}, {"duration": 4.0, "start_offset": 2.0, "notes": [{"freq": 293.67, "duration": 4.0}]}, {"duration": 3.0, "start_offset": 3.0, "notes": [{"freq": 329.63, "duration": 3.0}]}, {"duration": 2.0, "start_offset": 4.0, "notes": [{"freq": null, "duration": 2.0}]}, {"duration": 1.0, "start_offset": 5.0, "notes": [{"freq": null, "duration": 1.0}]}, {"duration": 5.0, "start_offset": 6.0, "notes": [{"freq": 220.0, "duration": 5.0}]}, {"duration": 4.0, "start_offset": 7.0, "notes": [{"freq": 246.95, "duration": 4.0}]}, {"duration": 3.0, "start_offset": 8.0, "notes": [{"freq": 261.63, "duration": 3.0}]}, {"duration": 2.0, "start_offset": 9.0, "notes": [{"freq": 329.63, "duration": 2.0}]}, {"duration": 1.0, "start_offset": 10.0, "notes": [{"freq": null, "duration": 1.0}]}]], [[{"duration": 6.0, "notes": [{"freq": 587.34, "duration": 6.0}]}, {"duration": 4.0, "notes": [{"freq": null, "duration": 4.0}]}, {"duration": 2.0, "notes": [{"freq": 392.0, "duration": 2.0}]}], [{"duration": 6.0, "start_offset": 0, "notes": [{"freq": 146.83, "duration": 6.0}]}, {"duration": 5.0, "start_offset": 1.0, "notes": [{"freq": 220.0, "duration": 5.0}]}, {"duration": 4.0, "start_offset": 2.0, "notes": [{"freq": 261.63, "duration": 4.0}]}, {"duration": 3.0, "start_offset": 3.0, "notes": [{"freq": 349.23, "duration": 3.0}]}, {"duration": 2.0, "start_offset": 4.0, "notes": [{"freq": null, "duration": 2.0}]}, {"duration": 1.0, "start_offset": 5.0, "notes": [{"freq": null, "duration": 1.0}]}, {"duration": 6.0, "start_offset": 6.0, "notes": [{"freq": 196.0, "duration": 6.0}]}, {"duration": 5.0, "start_offset": 7.0, "notes": [{"freq": 246.95, "duration": 5.0}]}, {"duration": 4.0, "start_offset": 8.0, "notes": [{"freq": 293.67, "duration": 4.0}]}, {"duration": 3.0, "start_offset": 9.0, "notes": [{"freq": 349.23, "duration": 3.0}]}, {"duration": 2.0, "start_offset": 10.0, "notes": [{"freq": null, "duration": 2.0}]}, {"duration": 1.0, "start_offset": 11.0, "notes": [{"freq": null, "duration": 1.0}]}]]]};
+        const statusDiv = document.getElementById('music-player-1-status');
+        let audioCtx = null;
+        let scheduledNodes = [];
+        let isPlaying = false;
+        
+        function getBeatDuration() {
+            return 60 / data.bpm;
+        }
+        
+        function schedule() {
+            if (!audioCtx) return;
+            
+            const beat = getBeatDuration();
+            
+            // 收集所有音符事件
+            let events = [];
+            let partStartOffset = 0;
+            
+            for (let pi = 0; pi < data.parts.length; pi++) {
+                let part = data.parts[pi];
+                
+                // 计算这个段落中每个声部的时长
+                let voiceDurations = [];
+                for (let voice of part) {
+                    let voiceDuration = 0;
+                    for (let group of voice) {
+                        if (group.start_offset !== undefined) {
+                            // pedal音符
+                            voiceDuration = Math.max(voiceDuration, group.start_offset + group.duration);
+                        } else {
+                            voiceDuration += group.duration;
+                        }
+                    }
+                    voiceDurations.push(voiceDuration);
+                }
+                
+                // 段落时长取所有声部的最大值
+                let partDuration = Math.max(...voiceDurations);
+                
+                // 处理段落内的所有声部和音符
+                for (let voiceIdx = 0; voiceIdx < part.length; voiceIdx++) {
+                    let voice = part[voiceIdx];
+                    let voiceDuration = voiceDurations[voiceIdx];
+                    
+                    let voiceTime = 0;
+                    for (let group of voice) {
+                        let duration = group.duration * beat;
+                        let startTime;
+                        
+                        if (group.start_offset !== undefined) {
+                            // pedal音符：从段落开始 + start_offset
+                            startTime = partStartOffset + group.start_offset * beat;
+                        } else {
+                            // 普通音符：从段落开始 + 累积位置
+                            startTime = partStartOffset + voiceTime * beat;
+                            voiceTime += group.duration;
+                        }
+                        
+                        // 收集音符
+                        for (let note of group.notes) {
+                            if (note.freq !== null) {
+                                events.push({
+                                    freq: note.freq,
+                                    start: startTime,
+                                    duration: duration
+                                });
+                            }
+                        }
+                    }
+                }
+                
+                // 推进段落偏移量
+                partStartOffset += partDuration * beat;
+            }
+            
+            // 按开始时间排序
+            events.sort((a, b) => a.start - b.start);
+            
+            // 计算总时长
+            let totalDuration = 0;
+            for (let e of events) {
+                totalDuration = Math.max(totalDuration, e.start + e.duration);
+            }
+            
+            let startTime = audioCtx.currentTime + 0.1;
+            
+            // 播放所有音符
+            for (let e of events) {
+                let osc = audioCtx.createOscillator();
+                let gain = audioCtx.createGain();
+                osc.type = 'triangle';
+                osc.frequency.value = e.freq;
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+                
+                let noteStart = startTime + e.start;
+                let noteEnd = noteStart + e.duration;
+                
+                gain.gain.setValueAtTime(0, noteStart);
+                gain.gain.linearRampToValueAtTime(0.4, noteStart + 0.01);
+                gain.gain.linearRampToValueAtTime(0.24, noteStart + 0.1);
+                gain.gain.linearRampToValueAtTime(0, noteEnd);
+                
+                osc.start(noteStart);
+                osc.stop(noteEnd);
+                scheduledNodes.push({osc, gain});
+            }
+            
+            isPlaying = true;
+            statusDiv.textContent = '🎵 播放中...';
+            
+            setTimeout(() => {
+                if (isPlaying) {
+                    statusDiv.textContent = '✅ 播放完成';
+                    isPlaying = false;
+                }
+            }, totalDuration * 1000);
+        }
+        
+        window.playMusic_1 = function() {
+            if (!audioCtx) {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            }
+            
+            if (audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
+            
+            // 停止之前的播放
+            for (let node of scheduledNodes) {
+                try {
+                    node.gain.gain.cancelScheduledValues(0);
+                    node.gain.gain.setValueAtTime(0, audioCtx.currentTime);
+                    node.osc.stop(audioCtx.currentTime + 0.01);
+                } catch(e) {}
+            }
+            scheduledNodes = [];
+            
+            schedule();
+        };
+        
+        window.pauseMusic_1 = function() {
+            if (audioCtx && audioCtx.state === 'running') {
+                audioCtx.suspend();
+                statusDiv.textContent = '⏸ 已暂停';
+            } else if (audioCtx && audioCtx.state === 'suspended') {
+                audioCtx.resume();
+                statusDiv.textContent = '🎵 播放中...';
+            }
+        };
+        
+        window.stopMusic_1 = function() {
+            for (let node of scheduledNodes) {
+                try {
+                    node.gain.gain.cancelScheduledValues(0);
+                    node.gain.gain.setValueAtTime(0, audioCtx.currentTime);
+                    node.osc.stop(audioCtx.currentTime + 0.01);
+                } catch(e) {}
+            }
+            scheduledNodes = [];
+            
+            if (audioCtx) {
+                audioCtx.suspend();
+            }
+            
+            isPlaying = false;
+            statusDiv.textContent = '⏹ 已停止';
+        };
+    })();
+    </script>
+</div>
+</details></section><footer><section class="block link-list" id="backlinks"><details open><summary><header><h1>Backlinks</h1></header></summary><section class="block" data-taxon="" style="margin-bottom: 0.4em;"><header><h1><span class="taxon"></span>单纯和声 Simphony <a class="slug" href="./index.html">[index]</a></h1><div class="metadata"><ul></ul></div></header></section></details></section></footer></article></div></body></html>
