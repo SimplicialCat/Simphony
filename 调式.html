@@ -518,13 +518,13 @@
 <link rel="stylesheet" href="./main.css"><style>
 @media only screen and (min-width: 1000px) {
   #grid-wrapper { grid-template-columns: var(--article-max-width) var(--toc-max-width); }
-  nav#toc { max-width: 45ex; }
+  nav#toc { max-width: max-content; }
 }
-</style></head><body><header class="header"><nav class="nav"><div class="logo"><span class="cursor-pointer" onclick="window.location.href='./index.html'" title="单纯和声 Simphony">« 单纯和声 Simphony</span></div></nav></header><div id="grid-wrapper" style="grid-template-areas: 'article toc';" data-base-url="./"><nav id="toc" class="sticky-nav mobile-sticky-nav"><div id="theme-options"></div></nav>
+</style></head><body><header class="header"><nav class="nav"><div class="logo"><span class="cursor-pointer" onclick="window.location.href='./index.html'" title="单纯和声 Simphony">« 单纯和声 Simphony</span></div></nav></header><div id="grid-wrapper" style="grid-template-areas: 'article toc';" data-base-url="./"><nav id="toc" class="sticky-nav mobile-sticky-nav"><div id="theme-options"></div><div class="block"><details open=""><summary><h1>目录</h1></summary><ul class="block"><li class=""><a class="bullet" href="./自然大调.html" title="自然大调 [自然大调]">■</a><span class="link local" onclick="window.location.href='#自然大调'"><span class="taxon"> 1. </span>自然大调</span></li><li class=""><a class="bullet" href="./自然小调.html" title="自然小调 [自然小调]">■</a><span class="link local" onclick="window.location.href='#自然小调'"><span class="taxon"> 2. </span>自然小调</span></li><li class=""><a class="bullet" href="./旋律小调.html" title="旋律小调 [旋律小调]">■</a><span class="link local" onclick="window.location.href='#旋律小调'"><span class="taxon"> 3. </span>旋律小调</span></li><li class=""><a class="bullet" href="./多利亚调式.html" title="多利亚调式 [多利亚调式]">■</a><span class="link local" onclick="window.location.href='#多利亚调式'"><span class="taxon"> 4. </span>多利亚调式</span></li></ul></details></div></nav>
 
 <article><section class="block" data-taxon=""><details open><summary id="调式"><header><h1><span class="taxon"></span>调式 <a class="slug" href="./调式.html">[调式]</a></h1><div class="metadata"><ul></ul></div></header></summary>
 <p>调式 (mode) 是按特定<span class="link local"><a href="./音程.html" title="音程 [音程]">音程</a></span>排列的一组 (通常是 7 个) 音.</p>
-<h3>自然大调</h3>
+<p><section class="block hide-metadata" data-taxon=""><details open><summary id="自然大调"><header><h1><span class="taxon"> 1. </span>自然大调 <a class="slug" href="./自然大调.html">[自然大调]</a></h1><div class="metadata"><ul></ul></div></header></summary>
 <p>$$
 \begin{array}{ccccccc}
 	\text{一} &amp; \text{二} &amp; \text{三} &amp; \text{四} &amp; \text{五} &amp; \text{六} &amp; \text{七} \\
@@ -536,7 +536,8 @@ let bpm = 180
 1 2 3 4 5 6 7 ^1
 
 </code></pre>
-<h3>自然小调</h3>
+</details></section></p>
+<p><section class="block hide-metadata" data-taxon=""><details open><summary id="自然小调"><header><h1><span class="taxon"> 2. </span>自然小调 <a class="slug" href="./自然小调.html">[自然小调]</a></h1><div class="metadata"><ul></ul></div></header></summary>
 <p>$$
 \begin{array}{ccccccc}
 	\text{一} &amp; \text{二} &amp; \text{三} &amp; \text{四} &amp; \text{五} &amp; \text{六} &amp; \text{七} \\
@@ -548,7 +549,8 @@ let bpm = 180
 1 2 b3 4 5 b6 b7 ^1
 
 </code></pre>
-<h3>旋律小调</h3>
+</details></section></p>
+<p><section class="block hide-metadata" data-taxon=""><details open><summary id="旋律小调"><header><h1><span class="taxon"> 3. </span>旋律小调 <a class="slug" href="./旋律小调.html">[旋律小调]</a></h1><div class="metadata"><ul></ul></div></header></summary>
 <p>$$
 \begin{array}{ccccccc}
 	\text{一} &amp; \text{二} &amp; \text{三} &amp; \text{四} &amp; \text{五} &amp; \text{六} &amp; \text{七} \\
@@ -561,7 +563,7 @@ let bpm = 180
 
 </code></pre>
 <p>旋律小调和自然大调只相差一个三级音.</p>
-<p>在使用旋律小调时, 人们常常会将<strong>下行</strong>音阶改为自然小调, 其六级和七级各降半音:</p>
+<p>在使用旋律小调时, 人们常常会将<strong>下行</strong>音阶改为<span class="link local"><a href="./自然小调.html" title="自然小调 [自然小调]">自然小调</a></span>, 其六级和七级各降半音:</p>
 <pre><code class="language-music">
 let bpm = 180
 1 2 b3 4 5 6 7 ^1 0
@@ -590,8 +592,9 @@ let bpm = 180
 | _{_3 - - - - - - - 6 - - - - - - -}
 
 </code></pre>
-<h3>多利亚调式</h3>
-<p><strong>多利亚调式</strong> (Dorian mode) 等同于自然大调的二级开始的音阶.</p>
+</details></section></p>
+<p><section class="block hide-metadata" data-taxon=""><details open><summary id="多利亚调式"><header><h1><span class="taxon"> 4. </span>多利亚调式 <a class="slug" href="./多利亚调式.html">[多利亚调式]</a></h1><div class="metadata"><ul></ul></div></header></summary>
+<p><strong>多利亚调式</strong> (Dorian mode) 等同于<span class="link local"><a href="./自然大调.html" title="自然大调 [自然大调]">自然大调</a></span>的二级开始的音阶.</p>
 <p>$$
 \begin{array}{ccccccc}
 	\text{一} &amp; \text{二} &amp; \text{三} &amp; \text{四} &amp; \text{五} &amp; \text{六} &amp; \text{七} \\
@@ -614,6 +617,13 @@ let bpm = 144
 | 0 ^{3 5 6 - 5 3 #4 2 3 - - - - 6}
 | @{_{1 5 ^1}} @{_{_6 3 ^1}} _{(1 3 5) (2 #4 6) -} @{_{_6 3 ^1 6 3 ^1}}
 
+| ^{6 - 6 5 - 3 3 2 1} 7 - - - - -
+| @{_{_6 3 _7}} @{_{1 3 ^1}} _{1 _7 _6} @{_{_5 2 5 7 5 2}}
+
+| 6 - ^3 ^2 - ^1 7 6 5 6 - - - - -
+| @{_{_6 3 ^1}} @{_{_5 2 5 7 5 2}} @{_{_6 3 ^1 6 3 ^1}}
+
 </code></pre>
-</details></section><footer><section class="block link-list" id="backlinks"><details open><summary><header><h1>Backlinks</h1></header></summary><section class="block" data-taxon="" style="margin-bottom: 0.4em;"><header><h1><span class="taxon"></span>单纯和声 Simphony <a class="slug" href="./index.html">[index]</a></h1><div class="metadata"><ul></ul></div></header></section><section class="block" data-taxon="" style="margin-bottom: 0.4em;"><header><h1><span class="taxon"></span>音程 <a class="slug" href="./音程.html">[音程]</a></h1><div class="metadata"><ul></ul></div></header></section></details></section></footer></article></div><script src="music-player.js"></script>
+</details></section></p>
+</details></section><footer><section class="block link-list" id="backlinks"><details open><summary><header><h1>反向链接</h1></header></summary><section class="block" data-taxon="" style="margin-bottom: 0.4em;"><header><h1><span class="taxon"></span>单纯和声 Simphony <a class="slug" href="./index.html">[index]</a></h1><div class="metadata"><ul></ul></div></header></section><section class="block" data-taxon="" style="margin-bottom: 0.4em;"><header><h1><span class="taxon"></span>音程 <a class="slug" href="./音程.html">[音程]</a></h1><div class="metadata"><ul></ul></div></header></section></details></section></footer></article></div><script src="music-player.js"></script>
 </body></html>

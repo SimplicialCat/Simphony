@@ -654,20 +654,15 @@
     osc2.start(startTime);
     osc2.stop(startTime + durationSec);
 
-    // 高亮钢琴按键 - 检查播放状态，传入当前generation防止残留
-    var self = this;
-    if (typeof window.highlightPianoKey === 'function' && this.isPlaying) {
+    // 高亮钢琴按键
+    if (typeof window.highlightPianoKey === 'function') {
       var now = this.audioCtx.currentTime;
       var delay = (startTime - now) * 1000;
-      var currentGeneration = pianoHighlightGeneration;
       if (delay <= 0) {
-        window.highlightPianoKey(midi, durationSec, currentGeneration);
+        window.highlightPianoKey(midi, durationSec);
       } else {
         setTimeout(function() {
-          // 再次检查播放状态和世代
-          if (self.isPlaying && pianoHighlightGeneration === currentGeneration) {
-            window.highlightPianoKey(midi, durationSec, currentGeneration);
-          }
+          window.highlightPianoKey(midi, durationSec);
         }, delay);
       }
     }
@@ -686,10 +681,6 @@
       } catch (e) {}
     }
     this.scheduledEvents = [];
-    // 清除钢琴按键高亮
-    if (typeof window.clearAllPianoHighlights === 'function') {
-      window.clearAllPianoHighlights();
-    }
   };
 
   AudioPlayer.prototype.play = function() {
@@ -701,10 +692,6 @@
       if (self.isPlaying) {
         resolve();
         return;
-      }
-      // 播放前先清除所有钢琴高亮，防止残留
-      if (typeof window.clearAllPianoHighlights === 'function') {
-        window.clearAllPianoHighlights();
       }
       if (self.isPaused) {
         self.audioCtx.resume().then(function() {
@@ -734,10 +721,6 @@
         self.pausedAt = self.audioCtx.currentTime - self.startTime;
       }
       self.stopAllNotes();
-      // 清除钢琴按键高亮
-      if (typeof window.clearAllPianoHighlights === 'function') {
-        window.clearAllPianoHighlights();
-      }
     });
   };
 
@@ -749,10 +732,6 @@
     this.isPlaying = false;
     this.isPaused = false;
     this.pausedAt = 0;
-    // 清除钢琴按键高亮
-    if (typeof window.clearAllPianoHighlights === 'function') {
-      window.clearAllPianoHighlights();
-    }
   };
 
   AudioPlayer.prototype.seek = function(percent) {
@@ -917,14 +896,6 @@
   // 钢琴样式
   var pianoStyle = document.createElement('style');
   pianoStyle.textContent = `
-    /* 为页面底部留出空间 */
-    body {
-      padding-bottom: 120px !important;
-    }
-    html {
-      scroll-padding-bottom: 120px;
-    }
-    
     /* 钢琴容器 */
     .music-piano-container {
       position: fixed;
@@ -940,7 +911,7 @@
     
     .music-piano-keys {
       position: relative;
-      height: 105px;
+      height: 90px;
       min-width: 700px;
       max-width: 90%;
       margin: 0 auto;
@@ -987,12 +958,12 @@
     }
     
     .music-piano-key.playing {
-      background: #50BBFF !important;
+      background: #70DBFF !important;
       box-shadow: 0 0 15px #70DBFF, 0 -3px 0 #70DBFF;
     }
     
     .music-piano-key.black.playing {
-      background: #4550D5 !important;
+      background: #253085 !important;
       box-shadow: 0 0 15px #70DBFF;
     }
     
@@ -1010,7 +981,6 @@
   var pianoAudioCtx = null;
   var pianoContainer = null;
   var pianoKeyElements = {};
-  var pianoHighlightGeneration = 0;  // 高亮世代计数器
   
   // 钢琴音符到 MIDI 的映射
   var pianoMidiToNote = {};
@@ -1174,17 +1144,13 @@
   }
   
   // 高亮钢琴按键（供外部调用）
-  window.highlightPianoKey = function(midi, duration, generation) {
+  window.highlightPianoKey = function(midi, duration) {
     if (!pianoContainer) {
       createPianoUI();
     }
     
     var keyEl = pianoKeyElements[midi];
     if (keyEl) {
-      // 检查世代是否匹配，如果代不符合则不添加高亮
-      if (generation !== undefined && generation !== pianoHighlightGeneration) {
-        return;
-      }
       // 清除之前可能存在的 timeout
       if (keyEl._highlightTimeout) {
         clearTimeout(keyEl._highlightTimeout);
@@ -1195,36 +1161,11 @@
       void keyEl.offsetWidth;
       // 添加高亮
       keyEl.classList.add('playing');
-      // 记录当前世代
-      var myGeneration = pianoHighlightGeneration;
-      // 提前100ms取消高亮，这样同一个键很快被按下也能看清楚
-      var highlightDuration = Math.max(50, (duration * 1000) - 100);
       // 设置新的 timeout
       keyEl._highlightTimeout = setTimeout(function() {
-        // 只有当前世代匹配时才取消高亮
-        if (pianoHighlightGeneration === myGeneration) {
-          keyEl.classList.remove('playing');
-          keyEl._highlightTimeout = null;
-        }
-      }, highlightDuration);
-    }
-  };
-  
-  // 清除所有钢琴按键高亮
-  window.clearAllPianoHighlights = function() {
-    // 递增世代计数器，使所有 pending 的高亮回调失效
-    pianoHighlightGeneration++;
-    for (var midi in pianoKeyElements) {
-      var keyEl = pianoKeyElements[midi];
-      if (keyEl) {
-        // 清除 pending 的 timeout
-        if (keyEl._highlightTimeout) {
-          clearTimeout(keyEl._highlightTimeout);
-          keyEl._highlightTimeout = null;
-        }
-        // 清除高亮状态
         keyEl.classList.remove('playing');
-      }
+        keyEl._highlightTimeout = null;
+      }, duration * 1000 || 200);
     }
   };
   

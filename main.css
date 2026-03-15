@@ -585,6 +585,26 @@ nav#toc a.bullet {
   text-decoration: none;
 }
 
+nav#toc {
+  position: fixed !important;
+  top: 2em;             /* 与 body 顶部间距一致 */
+  right: 2em;           /* 与 body 右侧间距一致 */
+  width: 45ex;
+  max-width: 45ex;
+  max-height: calc(100vh - 4em); /* 视口高度减去上下边距 */
+  overflow-y: auto;      /* 内容过多时可滚动 */
+  display: block;        /* 覆盖可能的隐藏设置 */
+  border-radius: var(--radius);
+  padding: 15px;         /* 与原有内边距一致 */
+  z-index: 100;          /* 确保位于文章上方 */
+}
+
+#toc,
+#toc .block {
+  background: none !important;
+  box-shadow: none !important;
+}
+
 ul {
     margin: 0 0 0 0;
     list-style-type: none;
