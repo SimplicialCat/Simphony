@@ -610,25 +610,45 @@
     if (!freq) return;
 
     var osc = this.audioCtx.createOscillator();
-    osc.type = 'triangle';
+    osc.type = 'sine';  // 改用正弦波，更像钢琴
     osc.frequency.value = freq;
     
     var gainNode = this.audioCtx.createGain();
     
-    var attackTime = 0.02;
-    var releaseTime = 0.1;
-    var sustainLevel = 0.3;
+    var peakLevel = 0.22;  // 峰值音量
+    var decayRate = 0.5;   // 衰减率
     
+    // 钢琴包络：快速起音 -> 按固定速率衰减 -> 结束前平滑释放
     gainNode.gain.setValueAtTime(0, startTime);
-    gainNode.gain.linearRampToValueAtTime(sustainLevel, startTime + attackTime);
-    gainNode.gain.setValueAtTime(sustainLevel, startTime + durationSec - releaseTime);
-    gainNode.gain.linearRampToValueAtTime(0, startTime + durationSec);
+    gainNode.gain.linearRampToValueAtTime(peakLevel, startTime + 0.025);
+    
+    var decayEnd = startTime + durationSec - 0.15;
+    if (decayEnd > startTime + 0.025) {
+      var targetLevel = Math.max(0.001, peakLevel - decayRate * (decayEnd - startTime - 0.025));
+      gainNode.gain.linearRampToValueAtTime(targetLevel, decayEnd);
+    }
+    
+    // 结束前平滑释放
+    gainNode.gain.linearRampToValueAtTime(0.001, startTime + durationSec);
 
     osc.connect(gainNode);
     gainNode.connect(this.gainNode);
 
     osc.start(startTime);
     osc.stop(startTime + durationSec);
+
+    // 高亮钢琴按键 - 需要根据实际播放时间延迟执行
+    if (typeof window.highlightPianoKey === 'function') {
+      var now = this.audioCtx.currentTime;
+      var delay = (startTime - now) * 1000;  // 转换为毫秒
+      if (delay <= 0) {
+        window.highlightPianoKey(midi, durationSec);
+      } else {
+        setTimeout(function() {
+          window.highlightPianoKey(midi, durationSec);
+        }, delay);
+      }
+    }
 
     this.scheduledEvents.push({ osc: osc, gainNode: gainNode });
   };
@@ -852,4 +872,273 @@
   } else {
     initPlayers();
   }
+
+  // ========== 钢琴界面功能 ==========
+  
+  // 钢琴样式
+  var pianoStyle = document.createElement('style');
+  pianoStyle.textContent = `
+    /* 钢琴容器 */
+    .music-piano-container {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background: #ffffff;
+      padding: 10px 20px 14px;
+      z-index: 10000;
+      box-shadow: 0 -2px 10px rgba(0,0,0,0.1);
+      border-top: 1px solid #e0e0e0;
+    }
+    
+    .music-piano-keys {
+      position: relative;
+      height: 90px;
+      min-width: 700px;
+      max-width: 90%;
+      margin: 0 auto;
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+    }
+    
+    .music-piano-key {
+      position: absolute;
+      cursor: pointer;
+      display: flex;
+      align-items: flex-end;
+      justify-content: center;
+      padding-bottom: 4px;
+      font-size: 0.5rem;
+      font-weight: 300;
+      user-select: none;
+      transition: background 0.05s, transform 0.05s;
+      box-sizing: border-box;
+      border: none;
+    }
+    
+    .music-piano-key:active {
+      transform: scaleY(0.92);
+    }
+    
+    .music-piano-key.white {
+      background: #FAFBFC;
+      height: 120px;
+      bottom: 0;
+      color: #253085;
+      border-right: 1px solid rgba(37, 48, 133, 0.15);
+      border-radius: 0 0 4px 4px;
+    }
+    
+    .music-piano-key.black {
+      background: #1a1a1a;
+      height: 72px;
+      top: 0;
+      color: #fff;
+      z-index: 10;
+      border-radius: 0 0 3px 3px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.4);
+    }
+    
+    .music-piano-key.playing {
+      background: #70DBFF !important;
+      box-shadow: 0 0 15px #70DBFF, 0 -3px 0 #70DBFF;
+    }
+    
+    .music-piano-key.black.playing {
+      background: #253085 !important;
+      box-shadow: 0 0 15px #70DBFF;
+    }
+    
+    .music-piano-label {
+      text-align: center;
+      color: #666;
+      font-size: 0.7rem;
+      margin-bottom: 8px;
+      opacity: 0.8;
+    }
+  `;
+  document.head.appendChild(pianoStyle);
+
+  // 全局钢琴相关变量
+  var pianoAudioCtx = null;
+  var pianoContainer = null;
+  var pianoKeyElements = {};
+  
+  // 钢琴音符到 MIDI 的映射
+  var pianoMidiToNote = {};
+  
+  // 创建钢琴界面
+  function createPianoUI() {
+    if (pianoContainer) return;
+    
+    pianoContainer = document.createElement('div');
+    pianoContainer.className = 'music-piano-container';
+    pianoContainer.innerHTML = '<div class="music-piano-label">点击钢琴按键弹奏</div><div class="music-piano-keys" id="musicPianoKeys"></div>';
+    document.body.appendChild(pianoContainer);
+    
+    var pianoKeysDiv = document.getElementById('musicPianoKeys');
+    
+    // 从 C2 到 C7 的音符（左右各加一个八度）
+    var whiteNotes = [];
+    var blackNotes = [];
+    
+    for (var midi = 36; midi <= 96; midi++) {
+      var noteName = midiToNoteName(midi);
+      var isBlack = noteName.includes('#');
+      
+      pianoMidiToNote[midi] = noteName;
+      
+      if (isBlack) {
+        blackNotes.push({ midi: midi, note: noteName });
+      } else {
+        whiteNotes.push({ midi: midi, note: noteName });
+      }
+    }
+    
+    var whiteWidthPercent = 100 / whiteNotes.length;
+    var blackWidthPercent = whiteWidthPercent * 0.6;
+    
+    // 白键
+    whiteNotes.forEach(function(item, index) {
+      var key = document.createElement('div');
+      key.className = 'music-piano-key white';
+      key.dataset.midi = item.midi;
+      key.dataset.note = item.note;
+      key.textContent = item.note;
+      key.style.left = (index * whiteWidthPercent) + '%';
+      key.style.width = whiteWidthPercent + '%';
+      
+      key.addEventListener('click', function() {
+        playPianoNote(item.midi);
+      });
+      
+      pianoKeysDiv.appendChild(key);
+      pianoKeyElements[item.midi] = key;
+    });
+    
+    // 黑键位置计算
+    var blackPositions = {
+      'C#': 0, 'D#': 1, 'F#': 3, 'G#': 4, 'A#': 5
+    };
+    
+    blackNotes.forEach(function(item) {
+      var noteName = item.note.slice(0, -1);
+      var octave = parseInt(item.note.slice(-1));
+      var whiteIndex = -1;
+      
+      // 找到该黑键左边的白键索引
+      for (var i = 0; i < whiteNotes.length; i++) {
+        var wn = whiteNotes[i].note;
+        var wnName = wn.slice(0, -1);
+        var wnOctave = parseInt(wn.slice(-1));
+        
+        if (wnOctave === octave) {
+          if (wnName === 'C' && noteName === 'C#') { whiteIndex = i; break; }
+          if (wnName === 'D' && noteName === 'D#') { whiteIndex = i; break; }
+          if (wnName === 'F' && noteName === 'F#') { whiteIndex = i; break; }
+          if (wnName === 'G' && noteName === 'G#') { whiteIndex = i; break; }
+          if (wnName === 'A' && noteName === 'A#') { whiteIndex = i; break; }
+        }
+      }
+      
+      if (whiteIndex === -1) return;
+      
+      var leftPercent = (whiteIndex + 1) * whiteWidthPercent - blackWidthPercent * 0.5;
+      
+      var key = document.createElement('div');
+      key.className = 'music-piano-key black';
+      key.dataset.midi = item.midi;
+      key.dataset.note = item.note;
+      key.textContent = item.note;
+      key.style.left = leftPercent + '%';
+      key.style.width = blackWidthPercent + '%';
+      
+      key.addEventListener('click', function() {
+        playPianoNote(item.midi);
+      });
+      
+      pianoKeysDiv.appendChild(key);
+      pianoKeyElements[item.midi] = key;
+    });
+  }
+  
+  // MIDI 转音符名
+  function midiToNoteName(midi) {
+    var notes = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
+    var octave = Math.floor(midi / 12) - 1;
+    var note = notes[midi % 12];
+    return note + octave;
+  }
+  
+  // 播放钢琴音符
+  function playPianoNote(midi) {
+    if (!pianoAudioCtx) {
+      pianoAudioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    }
+    
+    if (pianoAudioCtx.state === 'suspended') {
+      pianoAudioCtx.resume();
+    }
+    
+    var freq = 440 * Math.pow(2, (midi - 69) / 12);
+    var now = pianoAudioCtx.currentTime;
+    
+    var osc = pianoAudioCtx.createOscillator();
+    osc.type = 'sine';
+    osc.frequency.value = freq;
+    
+    var gainNode = pianoAudioCtx.createGain();
+    gainNode.gain.setValueAtTime(0, now);
+    gainNode.gain.linearRampToValueAtTime(0.3, now + 0.01);
+    gainNode.gain.linearRampToValueAtTime(0.15, now + 0.3);
+    gainNode.gain.linearRampToValueAtTime(0.001, now + 0.8);
+    
+    osc.connect(gainNode);
+    gainNode.connect(pianoAudioCtx.destination);
+    
+    osc.start(now);
+    osc.stop(now + 0.8);
+  }
+  
+  // 高亮钢琴按键（供外部调用）
+  window.highlightPianoKey = function(midi, duration) {
+    if (!pianoContainer) {
+      createPianoUI();
+    }
+    
+    var keyEl = pianoKeyElements[midi];
+    if (keyEl) {
+      // 清除之前可能存在的 timeout
+      if (keyEl._highlightTimeout) {
+        clearTimeout(keyEl._highlightTimeout);
+      }
+      // 清除可能存在的其他高亮
+      keyEl.classList.remove('playing');
+      // 强制重绘以确保状态更新
+      void keyEl.offsetWidth;
+      // 添加高亮
+      keyEl.classList.add('playing');
+      // 设置新的 timeout
+      keyEl._highlightTimeout = setTimeout(function() {
+        keyEl.classList.remove('playing');
+        keyEl._highlightTimeout = null;
+      }, duration * 1000 || 200);
+    }
+  };
+  
+  // 初始化钢琴界面
+  function initPiano() {
+    // 延迟创建钢琴界面，确保 DOM 加载完成
+    setTimeout(function() {
+      createPianoUI();
+    }, 100);
+  }
+  
+  // 在页面加载时初始化钢琴
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initPiano);
+  } else {
+    initPiano();
+  }
+
 })();
