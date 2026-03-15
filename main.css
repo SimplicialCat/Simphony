@@ -537,7 +537,7 @@ body>header {
   }
 
   #grid-wrapper>nav {
-    display: none;
+    display: none !important;
     transition: ease all .2s;
   }
 }
