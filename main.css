@@ -585,7 +585,8 @@ nav#toc a.bullet {
   text-decoration: none;
 }
 
-nav#toc {
+@media only screen and (min-width: 1000px) {
+  nav#toc {
   position: fixed !important;
   top: 2em;             /* 与 body 顶部间距一致 */
   right: 2em;           /* 与 body 右侧间距一致 */
@@ -597,6 +598,7 @@ nav#toc {
   border-radius: var(--radius);
   padding: 15px;         /* 与原有内边距一致 */
   z-index: 100;          /* 确保位于文章上方 */
+  }
 }
 
 #toc,
