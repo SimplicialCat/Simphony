@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en-US"><head>
 <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
-<meta name="viewport" content="width=device-width"><title>音程</title><link rel="icon" href="./assets/favicon.ico" /><template id="inline-section">
+<meta name="viewport" content="width=device-width"><title>调式对音的名称的影响</title><link rel="icon" href="./assets/favicon.ico" /><template id="inline-section">
   <section class="inline block" data-taxon="">
     <details open="">
       <summary>
@@ -520,31 +520,22 @@
   #grid-wrapper { grid-template-columns: var(--article-max-width) var(--toc-max-width); }
   nav#toc { max-width: max-content; }
 }
-</style></head><body><header class="header"><nav class="nav"><div class="logo"><span class="cursor-pointer" onclick="window.location.href='./index.html'" title="单纯和声 Simphony">« 单纯和声 Simphony</span></div></nav></header><div id="grid-wrapper" style="grid-template-areas: 'article toc';" data-base-url="./"><nav id="toc" class="sticky-nav mobile-sticky-nav"><div id="theme-options"></div></nav>
+</style></head><body><header class="header"><nav class="nav"><div class="logo"><span class="cursor-pointer" onclick="window.location.href='./调式.html'" title="调式">« 调式</span></div></nav></header><div id="grid-wrapper" style="grid-template-areas: 'article toc';" data-base-url="./"><nav id="toc" class="sticky-nav mobile-sticky-nav"><div id="theme-options"></div></nav>
 
-<article><section class="block" data-taxon=""><details open><summary id="音程"><header><h1><span class="taxon"></span>音程 <a class="slug" href="./音程.html">[音程]</a></h1><div class="metadata"><ul></ul></div></header></summary>
-<p>音程是两个<span class="link local"><a href="./音.html" title="音 [音]">音</a></span>之间的差距, 以半音为单位. 注意根据具体的场合 (主要是根据<span class="link local"><a href="./调式.html" title="调式 [调式]">调式</a></span>), 同一个数可能对应不同的音程名称.</p>
-<table><thead><tr><th>半音数</th><th>音程的名称</th></tr></thead><tbody>
-<tr><td>$1$</td><td><strong>小二度</strong></td></tr>
-<tr><td>$2$</td><td><strong>大二度</strong> / 减三度</td></tr>
-<tr><td>$3$</td><td>增二度 / <strong>小三度</strong></td></tr>
-<tr><td>$4$</td><td><strong>大三度</strong> / 减四度</td></tr>
-<tr><td>$5$</td><td>增三度 / <strong>纯四度</strong></td></tr>
-<tr><td>$6$</td><td>增四度 / 减五度</td></tr>
-<tr><td>$7$</td><td><strong>纯五度</strong> / 减六度</td></tr>
-<tr><td>$8$</td><td>增五度 / <strong>小六度</strong></td></tr>
-<tr><td>$9$</td><td><strong>大六度</strong> / 减七度</td></tr>
-<tr><td>$10$</td><td>增六度 / <strong>小七度</strong></td></tr>
-<tr><td>$11$</td><td><strong>大七度</strong></td></tr>
-<tr><td>$12$</td><td><strong>八度</strong></td></tr>
-</tbody></table>
-<h3>5 个半音: 纯四度</h3>
-<p>纯四度的频率比接近于 $\dfrac{4}{3}$, 是纯五度的频率比倒数乘以 $2$.</p>
-<pre><code class="language-music">1 4 (1 4) - _6 2 (_6 2) -
-</code></pre>
-<h3>7 个半音: 纯五度</h3>
-<p>纯五度的频率比接近于 $\dfrac{3}{2}$, 和谐程度仅次于八度. 稳定, 但有些平淡.</p>
-<pre><code class="language-music">1 5 (1 5) - _6 3 (_6 3) -
-</code></pre>
-</details></section><footer><section class="block link-list" id="backlinks"><details open><summary><header><h1>反向链接</h1></header></summary><section class="block" data-taxon="" style="margin-bottom: 0.4em;"><header><h1><span class="taxon"></span>单纯和声 Simphony <a class="slug" href="./index.html">[index]</a></h1><div class="metadata"><ul></ul></div></header></section><section class="block" data-taxon="" style="margin-bottom: 0.4em;"><header><h1><span class="taxon"></span>和声小调 <a class="slug" href="./和声小调.html">[和声小调]</a></h1><div class="metadata"><ul></ul></div></header></section><section class="block" data-taxon="" style="margin-bottom: 0.4em;"><header><h1><span class="taxon"></span>调式 <a class="slug" href="./调式.html">[调式]</a></h1><div class="metadata"><ul></ul></div></header></section><section class="block" data-taxon="" style="margin-bottom: 0.4em;"><header><h1><span class="taxon"></span>音 <a class="slug" href="./音.html">[音]</a></h1><div class="metadata"><ul></ul></div></header></section></details></section></footer></article></div><script src="music-player.js"></script>
+<article><section class="block" data-taxon=""><details open><summary id="调式-音名"><header><h1><span class="taxon"></span>调式对音的名称的影响 <a class="slug" href="./调式-音名.html">[调式-音名]</a></h1><div class="metadata"><ul></ul></div></header></summary>
+<p>一个音有多个名称, 或两个音之间的音程有多个名称时, 要由两者所在的级数决定具体采用的名称:</p>
+<ul>
+<li>每一级必须用不同的字母;</li>
+<li>音程中的数字是级数的差 $+1$.</li>
+</ul>
+<p><strong>例</strong>. 在 $D$ 为主音的自然大调
+$$
+(D,E,\sharp F, G,A,B,\sharp C,D)
+$$
+中,</p>
+<ul>
+<li>三级音的名称为 $\sharp F$, 而不是 $\flat G$; 这是因为字母 $G$ 被四级的 $G$ 占用了.</li>
+<li>此时若要临时将三级音升半音, 则应称之为 $\text{𝄪}F$, 而不是 $G$.</li>
+</ul>
+</details></section><footer></footer></article></div><script src="music-player.js"></script>
 </body></html>
