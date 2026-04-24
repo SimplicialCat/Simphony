@@ -33,6 +33,28 @@
     '#6': 15,  'b7': 16, '7': 17,  '#7': 18, 'b1': -1
   };
 
+  // 19EDO中各调的主音位置（相对于C4=0）
+  // 基于大调音阶在19EDO中的结构
+  const KEY_19EDO_POSITIONS = {
+    'C': 0,
+    'C#': 1, 'Db': 2,
+    'D': 3,
+    'D#': 4, 'Eb': 5,
+    'E': 6,
+    'F': 8,
+    'F#': 9, 'Gb': 10,
+    'G': 11,
+    'G#': 12, 'Ab': 13,
+    'A': 14,
+    'A#': 15, 'Bb': 16,
+    'B': 17
+  };
+
+  // 获取调在19EDO中的位置
+  function getKey19EdoPosition(key) {
+    return KEY_19EDO_POSITIONS[key] || 0;
+  }
+
   // EDO-aware note calculation function
   function getEdoNoteSemitones(noteChar, accidental, edo) {
     if (edo === 19) {
@@ -488,28 +510,19 @@
 
       var edoNumber;
       if (edo === 19) {
-        // 19EDO calculation - simplified approach
+        // 19EDO calculation - use direct 19EDO key positions
         var note19Offset = getEdoNoteSemitones(noteChar, accidental, edo);
-        var keyData = getKeySemitones(key);
-        var keyBaseMidi = keyData.rootMidi;
 
-        // Calculate the tonic's absolute position in 12EDO semitones from C4
-        var tonicSemitonePos = (keyBaseMidi - 60) + totalOctaveOffset * 12;
-
-        // Convert to 19EDO: each octave is 19 steps
-        // First, find which octave we're in and convert to 19EDO octave
-        var octave19 = Math.floor(tonicSemitonePos / 12);
-        var semitoneInOctave = tonicSemitonePos % 12;
-        if (semitoneInOctave < 0) {
-          semitoneInOctave += 12;
-          octave19 -= 1;
+        // Get the 19EDO position of the key tonic directly
+        var key19Position = getKey19EdoPosition(key);
+        if (key19Position === null) {
+          // Fallback to C if key not found
+          key19Position = 0;
         }
 
-        // Convert semitone position within octave to 19EDO position
-        var pos19InOctave = Math.round(semitoneInOctave * 19 / 12);
-
-        // Add the note's 19EDO offset
-        edoNumber = octave19 * 19 + pos19InOctave + note19Offset;
+        // Calculate absolute position in 19EDO
+        // totalOctaveOffset represents octave shifts from the key's base octave
+        edoNumber = key19Position + note19Offset + totalOctaveOffset * 19;
       } else {
         // 12EDO calculation (existing logic)
         var keyData = getKeySemitones(key);
@@ -1085,7 +1098,7 @@
     /* 19EDO-specific key styles */
     .music-piano-key.purple {
       background: linear-gradient(135deg, #465BCF, #5670E9);
-      height: 80px;
+      height: 60px;
       top: 0;
       color: #fff;
       z-index: 10;
@@ -1095,7 +1108,7 @@
     
     .music-piano-key.blue {
       background: linear-gradient(135deg, #70DBFF, #6AC6E8);
-      height: 64px;
+      height: 34px;
       top: 0;
       color: #fff;
       z-index: 10;

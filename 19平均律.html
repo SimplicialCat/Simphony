@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en-US"><head>
 <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
-<meta name="viewport" content="width=device-width"><title>19 平均律测试</title><link rel="icon" href="./assets/favicon.ico" /><template id="inline-section">
+<meta name="viewport" content="width=device-width"><title>19 平均律</title><link rel="icon" href="./assets/favicon.ico" /><template id="inline-section">
   <section class="inline block" data-taxon="">
     <details open="">
       <summary>
@@ -522,37 +522,40 @@
 }
 </style></head><body><header class="header"><nav class="nav"><div class="logo"><span class="cursor-pointer" onclick="window.location.href='./index.html'" title="单纯和声 Simphony">« 单纯和声 Simphony</span></div></nav></header><div id="grid-wrapper" style="grid-template-areas: 'article toc';" data-base-url="./"><nav id="toc" class="sticky-nav mobile-sticky-nav"><div id="theme-options"></div></nav>
 
-<article><section class="block" data-taxon=""><details open><summary id="test-19edo"><header><h1><span class="taxon"></span>19 平均律测试 <a class="slug" href="./test-19edo.html">[test-19edo]</a></h1><div class="metadata"><ul></ul></div></header></summary>
+<article><section class="block" data-taxon=""><details open><summary id="19平均律"><header><h1><span class="taxon"></span>19 平均律 <a class="slug" href="./19平均律.html">[19平均律]</a></h1><div class="metadata"><ul></ul></div></header></summary>
+<p>19 平均律是将八度 (在对数尺度上) 平均划分为 $19$ 份的律制.</p>
+<p>下表中 (12) 表示 12 平均律中同名的音 (的频率比).</p>
+<table><thead><tr><th>步数</th><th>名称</th><th>频率比 (19)</th><th>(12)</th></tr></thead><tbody>
+<tr><td>0</td><td>$C$</td><td>$1.000$</td><td>$1.000$</td></tr>
+<tr><td>1</td><td>$\sharp C$</td><td>$1.037$</td><td>$1.059$</td></tr>
+<tr><td>2</td><td>$\flat D$</td><td>$1.076$</td><td>$1.059$</td></tr>
+<tr><td>3</td><td>$D$</td><td>$1.116$</td><td>$1.122$</td></tr>
+<tr><td>4</td><td>$\sharp D$</td><td>$1.157$</td><td>$1.189$</td></tr>
+<tr><td>5</td><td>$\flat E$</td><td>$1.200$</td><td>$1.189$</td></tr>
+<tr><td>6</td><td>$E$</td><td>$1.245$</td><td>$1.260$</td></tr>
+<tr><td>7</td><td>$\sharp E = \flat F$</td><td>$1.291$</td><td>$-$</td></tr>
+<tr><td>8</td><td>$F$</td><td>$1.339$</td><td>$1.335$</td></tr>
+<tr><td>9</td><td>$\sharp F$</td><td>$1.389$</td><td>$1.414$</td></tr>
+<tr><td>10</td><td>$\flat G$</td><td>$1.440$</td><td>$1.414$</td></tr>
+<tr><td>11</td><td>$G$</td><td>$1.494$</td><td>$1.498$</td></tr>
+<tr><td>12</td><td>$\sharp G$</td><td>$1.549$</td><td>$1.587$</td></tr>
+<tr><td>13</td><td>$\flat A$</td><td>$1.607$</td><td>$1.587$</td></tr>
+<tr><td>14</td><td>$A$</td><td>$1.667$</td><td>$1.682$</td></tr>
+<tr><td>15</td><td>$\sharp A$</td><td>$1.728$</td><td>$1.782$</td></tr>
+<tr><td>16</td><td>$\flat B$</td><td>$1.793$</td><td>$1.782$</td></tr>
+<tr><td>17</td><td>$B$</td><td>$1.859$</td><td>$1.888$</td></tr>
+<tr><td>18</td><td>$\sharp B = \flat C$</td><td>$1.928$</td><td>$-$</td></tr>
+</tbody></table>
+<p>值得注意的点:</p>
+<ul>
+<li>19 平均律的 $5$ 步非常完美地接近 $6/5 = 1.200$ (小三度), 同理 $14$ 步非常完美地接近 $5/3 = 1.667$ (大六度).</li>
+</ul>
 <pre><code class="language-music">
 let edo = 19
 
-1 #1 b2 2 #2 b3 3
+1 b3 (1 b3) - 
 
-</code></pre>
-<pre><code class="language-music">
-let edo = 19
-
-(_2 2 4 6 ^1) - (__5 _5 2 4 7) - (_1 1 3 5 ^1) -
-
-</code></pre>
-<pre><code class="language-music">
-let edo = 19
-let key = Eb
-let bpm = 180
-
-3 4 3
-
-| ^1 - - 7 ^1 7 6 7 ={^1 - - 7} ^2 - 0 3 #2 3
-| @{__6 _3 1 _6 - 1 3 _6} @{_{_2 2 6 4 - 4 ^1 6}}
-
-| 7 - - 6 #5 - ={4 - - 5} 4 - 3 - - 3 4 3
-| @{_{_3 3 7 - - 2 #5 4}} @{_{_6 3 6 - - _6 1 3}}
-
-| ^1 - - 7 ^1 7 6 7 ={^1 - - 7} ^2 - 0 3 4 3
-| @{__6 _3 1 _6 - 1 3 _6} @{_{_2 2 6 4 - 4 ^1 6}}
-
-| 7 - - 6 #5 - ^1 - 6 - - - - - - -
-| @{_{_3 3 7 - - 2 #5 7}} @{_{(_6 3 ^1) - - - - -}}
+1 6 (1 6) -
 
 </code></pre>
 </details></section><footer><section class="block link-list" id="backlinks"><details open><summary><header><h1>反向链接</h1></header></summary><section class="block" data-taxon="" style="margin-bottom: 0.4em;"><header><h1><span class="taxon"></span>单纯和声 Simphony <a class="slug" href="./index.html">[index]</a></h1><div class="metadata"><ul></ul></div></header></section></details></section></footer></article></div><script src="music-player.js"></script>
