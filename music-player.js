@@ -1085,17 +1085,17 @@
     /* 19EDO-specific key styles */
     .music-piano-key.purple {
       background: linear-gradient(135deg, #465BCF, #5670E9);
-      height: 100px;
+      height: 80px;
       top: 0;
       color: #fff;
       z-index: 10;
       border-radius: 0 0 3px 3px;
       box-shadow: 0 2px 6px rgba(0,0,0,0.2);
     }
-
+    
     .music-piano-key.blue {
       background: linear-gradient(135deg, #70DBFF, #6AC6E8);
-      height: 84px;
+      height: 64px;
       top: 0;
       color: #fff;
       z-index: 10;
@@ -1336,18 +1336,22 @@
 
       // 单紫键 (间隔小)
       if (item.type === 'purple' &&
-          (localPos === 6 || localPos === 18)) {
-        leftPercent = (whiteIndex + 0.5) * whiteWidthPercent - widthPercent / 2;
+          (localPos === 7 || localPos === 18)) {
+        leftPercent = (whiteIndex + 0.7) * whiteWidthPercent ;
       }
       // 紫+蓝双键 (间隔大)
-      else if (localPos % 3 === 1 || localPos % 3 === 2) {
+      else if ((localPos === 1 || localPos === 2 ||
+           localPos === 4 || localPos === 5 ||
+           localPos === 9 || localPos === 10 ||
+           localPos === 12 || localPos === 13 ||
+           localPos === 15 || localPos === 16)) {
         if (item.type === 'purple') {
-          leftPercent = (whiteIndex + 0.35) * whiteWidthPercent - widthPercent / 2;
+          leftPercent = (whiteIndex + 0.55) * whiteWidthPercent ;
         } else { // blue
-          leftPercent = (whiteIndex + 0.65) * whiteWidthPercent - widthPercent / 2;
+          leftPercent = (whiteIndex + 0.85) * whiteWidthPercent ;
         }
       } else {
-        leftPercent = (whiteIndex + 0.5) * whiteWidthPercent - widthPercent / 2;
+        leftPercent = (whiteIndex + 0.8) * whiteWidthPercent;
       }
 
       var key = document.createElement('div');
