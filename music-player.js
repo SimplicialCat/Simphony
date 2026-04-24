@@ -24,6 +24,30 @@
     return { rootMidi: rootMidi, semitones: C_MAJOR_SEMITONES };
   }
 
+  // 19EDO各音级的19平均律偏移
+  const EDO_19_NOTES = {
+    '1': 0,    '#1': 1,  'b2': 2,  '2': 3,
+    '#2': 4,   'b3': 5,  '3': 6,   '#3': 7,
+    'b4': 7,   '4': 8,   '#4': 9,  'b5': 10,
+    '5': 11,   '#5': 12, 'b6': 13, '6': 14,
+    '#6': 15,  'b7': 16, '7': 17,  '#7': 18, 'b1': -1
+  };
+
+  // EDO-aware note calculation function
+  function getEdoNoteSemitones(noteChar, accidental, edo) {
+    if (edo === 19) {
+      var noteKey = noteChar;
+      if (accidental) noteKey = accidental + noteChar;
+      return EDO_19_NOTES[noteKey];
+    } else {
+      // 12EDO: existing logic
+      var baseSemitone = C_MAJOR_SEMITONES[noteChar] || 0;
+      if (accidental === '#') baseSemitone += 1;
+      else if (accidental === 'b') baseSemitone -= 1;
+      return baseSemitone;
+    }
+  }
+
   const KEY_SIGNATURES = {
     'C':  { note: 'C', octave: 4 },
     'C#': { note: 'C', accidental: '#', octave: 4 },
@@ -61,11 +85,24 @@
     return 440 * Math.pow(2, (midi - 69) / 12);
   }
 
+  // EDO-aware frequency calculation
+  function edoToFreq(edoNumber, edo, refFreq) {
+    if (edo === 12) {
+      return 440 * Math.pow(2, (edoNumber - 69) / 12);
+    } else {
+      // For 19EDO, use reference frequency (C4 = 261.6256 Hz by default)
+      refFreq = refFreq || 261.6256;
+      // edoNumber 0 corresponds to C4 in 19EDO system
+      return refFreq * Math.pow(2, edoNumber / 19);
+    }
+  }
+
   // Main parser function
   function parseMusic(code) {
     var lines = code.split('\n');
     var bpm = 120;
     var key = 'C';
+    var edo = 12;
     var parts = [];
     var currentPart = { voices: [] };
     var currentVoiceArray = [];
@@ -105,6 +142,11 @@
             }
           } else if (varName === 'key') {
             key = value;
+          } else if (varName === 'edo') {
+            var parsedEdo = parseInt(value, 10);
+            if (!isNaN(parsedEdo) && (parsedEdo === 12 || parsedEdo === 19)) {
+              edo = parsedEdo;
+            }
           }
         }
         continue;
@@ -117,12 +159,12 @@
         }
         var voiceLine = line.substring(1).trim();
         var newVoice = [];
-        parseVoiceLine(voiceLine, newVoice, key);
+        parseVoiceLine(voiceLine, newVoice, key, edo);
         if (newVoice.length > 0) {
           currentPart.voices.push(newVoice);
         }
       } else {
-        parseVoiceLine(line, currentVoiceArray, key);
+        parseVoiceLine(line, currentVoiceArray, key, edo);
       }
     }
 
@@ -155,9 +197,9 @@
       partStartBeat = partMaxBeat;
     }
 
-    return { bpm: bpm, key: key, parts: parts };
+    return { bpm: bpm, key: key, edo: edo, parts: parts };
 
-    function parseVoiceLine(line, eventsArray, currentKey) {
+    function parseVoiceLine(line, eventsArray, currentKey, edo) {
       var tokens = tokenize(line);
       var pos = 0;
       while (pos < tokens.length) {
@@ -165,7 +207,7 @@
           octaveOffset: 0,
           durationMultiplier: 1.0,
           sustainBlockId: null
-        }, currentKey, eventsArray);
+        }, currentKey, eventsArray, edo);
         pos = result.pos;
       }
     }
@@ -279,82 +321,82 @@
       return tokens;
     }
 
-    function parseTokens(tokens, pos, context, currentKey, eventsArray) {
+    function parseTokens(tokens, pos, context, currentKey, eventsArray, edo) {
       var currentOctave = context.octaveOffset;
       var currentDuration = context.durationMultiplier;
       var currentSustainBlock = context.sustainBlockId;
       var i = pos;
-      
+
       while (i < tokens.length) {
         var token = tokens[i];
-        
+
         if (token === '}') {
           return { pos: i + 1 };
         }
-        
+
         if (token === '^{') {
           var result = parseTokens(tokens, i + 1, {
             octaveOffset: currentOctave + 1,
             durationMultiplier: currentDuration,
             sustainBlockId: currentSustainBlock
-          }, currentKey, eventsArray);
+          }, currentKey, eventsArray, edo);
           i = result.pos;
           continue;
         }
-        
+
         if (token === '_{') {
           var result = parseTokens(tokens, i + 1, {
             octaveOffset: currentOctave - 1,
             durationMultiplier: currentDuration,
             sustainBlockId: currentSustainBlock
-          }, currentKey, eventsArray);
+          }, currentKey, eventsArray, edo);
           i = result.pos;
           continue;
         }
-        
+
         if (token === '={') {
           var result = parseTokens(tokens, i + 1, {
             octaveOffset: currentOctave,
             durationMultiplier: currentDuration * 0.5,
             sustainBlockId: currentSustainBlock
-          }, currentKey, eventsArray);
+          }, currentKey, eventsArray, edo);
           i = result.pos;
           continue;
         }
-        
+
         if (token === '@{') {
           var blockId = 'sustain_' + Math.random().toString(36).substr(2, 9);
           var result = parseTokens(tokens, i + 1, {
             octaveOffset: currentOctave,
             durationMultiplier: currentDuration,
             sustainBlockId: blockId
-          }, currentKey, eventsArray);
+          }, currentKey, eventsArray, edo);
           i = result.pos;
           continue;
         }
-        
+
         if (token.indexOf('-') === 0) {
           i++;
           continue;
         }
-        
+
         if (token.indexOf('(') === 0 && token.lastIndexOf(')') === token.length - 1) {
           var inner = token.substring(1, token.length - 1);
           var noteTokens = inner.split(/\s+/).filter(function(t) { return t.length > 0; });
           var chordNotes = [];
-          
+
           for (var nt = 0; nt < noteTokens.length; nt++) {
-            var noteInfo = parseNoteTokenWithContext(noteTokens[nt], currentOctave, currentKey);
+            var noteInfo = parseNoteTokenWithContext(noteTokens[nt], currentOctave, currentKey, edo);
             if (noteInfo) chordNotes.push(noteInfo);
           }
-          
+
           var duration = 1 * currentDuration;
           var j = i + 1;
           while (j < tokens.length && tokens[j].indexOf('-') === 0) {
             duration += tokens[j].length * currentDuration;
             j++;
           }
-          
+
           if (chordNotes.length > 0) {
             eventsArray.push({
               type: 'chord',
@@ -363,11 +405,11 @@
               sustainBlockId: currentSustainBlock
             });
           }
-          
+
           i = j;
           continue;
         }
-        
+
         if (token === '0') {
           var duration = 1 * currentDuration;
           var j = i + 1;
@@ -375,18 +417,18 @@
             duration += tokens[j].length * currentDuration;
             j++;
           }
-          
+
           eventsArray.push({
             type: 'rest',
             duration: duration,
             sustainBlockId: currentSustainBlock
           });
-          
+
           i = j;
           continue;
         }
-        
-        var noteInfo = parseNoteTokenWithContext(token, currentOctave, currentKey);
+
+        var noteInfo = parseNoteTokenWithContext(token, currentOctave, currentKey, edo);
         if (noteInfo) {
           var duration = 1 * currentDuration;
           var j = i + 1;
@@ -394,7 +436,7 @@
             duration += tokens[j].length * currentDuration;
             j++;
           }
-          
+
           eventsArray.push({
             type: 'note',
             pitch: noteInfo.pitch,
@@ -402,64 +444,87 @@
             duration: duration,
             sustainBlockId: currentSustainBlock
           });
-          
+
           i = j;
           continue;
         }
-        
+
         i++;
       }
-      
+
       return { pos: i };
     }
 
-    function parseNoteTokenWithContext(token, octaveOffset, key) {
+    function parseNoteTokenWithContext(token, octaveOffset, key, edo) {
       var accidental = '';
       var localOctaveOffset = 0;
       var noteChar = '';
       var idx = 0;
-      
+
       while (idx < token.length && (token[idx] === '_' || token[idx] === '^')) {
         if (token[idx] === '_') localOctaveOffset -= 1;
         else if (token[idx] === '^') localOctaveOffset += 1;
         idx++;
       }
-      
+
       if (idx < token.length && (token[idx] === '#' || token[idx] === 'b')) {
         accidental = token[idx];
         idx++;
       }
-      
+
       if (idx < token.length && token[idx] >= '1' && token[idx] <= '7') {
         noteChar = token[idx];
         idx++;
       } else {
         return null;
       }
-      
+
       if (idx < token.length && (token[idx] === '#' || token[idx] === 'b')) {
         accidental = token[idx];
         idx++;
       }
-      
-      // 使用新的调号计算函数
-      var keyData = getKeySemitones(key);
-      var keyBaseMidi = keyData.rootMidi;
-      var cMajorOffset = keyData.semitones[noteChar] || 0;
-      
+
       var totalOctaveOffset = octaveOffset + localOctaveOffset;
-      
-      var midi = keyBaseMidi + cMajorOffset;
-      if (accidental === '#') midi += 1;
-      else if (accidental === 'b') midi -= 1;
-      midi += totalOctaveOffset * 12;
-      
-      // 从MIDI值计算八度 (MIDI 60 = C4)
-      var resultOctave = Math.floor(midi / 12) - 1;
+
+      var edoNumber;
+      if (edo === 19) {
+        // 19EDO calculation - simplified approach
+        var note19Offset = getEdoNoteSemitones(noteChar, accidental, edo);
+        var keyData = getKeySemitones(key);
+        var keyBaseMidi = keyData.rootMidi;
+
+        // Calculate the tonic's absolute position in 12EDO semitones from C4
+        var tonicSemitonePos = (keyBaseMidi - 60) + totalOctaveOffset * 12;
+
+        // Convert to 19EDO: each octave is 19 steps
+        // First, find which octave we're in and convert to 19EDO octave
+        var octave19 = Math.floor(tonicSemitonePos / 12);
+        var semitoneInOctave = tonicSemitonePos % 12;
+        if (semitoneInOctave < 0) {
+          semitoneInOctave += 12;
+          octave19 -= 1;
+        }
+
+        // Convert semitone position within octave to 19EDO position
+        var pos19InOctave = Math.round(semitoneInOctave * 19 / 12);
+
+        // Add the note's 19EDO offset
+        edoNumber = octave19 * 19 + pos19InOctave + note19Offset;
+      } else {
+        // 12EDO calculation (existing logic)
+        var keyData = getKeySemitones(key);
+        var keyBaseMidi = keyData.rootMidi;
+        var cMajorOffset = getEdoNoteSemitones(noteChar, accidental, edo);
+        edoNumber = keyBaseMidi + cMajorOffset + totalOctaveOffset * 12;
+      }
+
+      // 从EDO值计算八度和音名
+      var divisor = edo === 19 ? 19 : 12;
+      var resultOctave = Math.floor(edoNumber / divisor) + 4; // +4 to align with C4 = 60
       var baseNoteName = NOTE_MAP[noteChar];
       var pitchStr = baseNoteName + accidental + resultOctave;
-      
-      return { pitch: pitchStr, midi: midi };
+
+      return { pitch: pitchStr, midi: edoNumber, edo: edo };
     }
   }
 
@@ -606,7 +671,7 @@
   };
 
   AudioPlayer.prototype.scheduleNote = function(midi, startTime, durationSec) {
-    var freq = midiToFreq(midi);
+    var freq = edoToFreq(midi, this.score.edo || 12);
     if (!freq) return;
 
     var peakLevel = 0.2;
@@ -895,6 +960,27 @@
     try {
       var codeBlocks = document.querySelectorAll('pre code.language-music');
       console.log('Found', codeBlocks.length, 'code blocks');
+
+      // First pass: detect EDO from first music block
+      var detectedEdo = 12; // default to 12EDO
+      for (var i = 0; i < codeBlocks.length; i++) {
+        var musicCode = codeBlocks[i].textContent.trim();
+        var edoMatch = musicCode.match(/let\s+edo\s*=\s*(\d+)/);
+        if (edoMatch) {
+          var edoValue = parseInt(edoMatch[1]);
+          if (edoValue === 12 || edoValue === 19) {
+            detectedEdo = edoValue;
+            break;
+          }
+        }
+      }
+
+      // Create piano with detected EDO
+      if (!pianoContainer) {
+        createPianoUI(detectedEdo);
+      }
+
+      // Second pass: create players
       for (var i = 0; i < codeBlocks.length; i++) {
         var code = codeBlocks[i];
         var musicCode = code.textContent.trim();
@@ -995,6 +1081,37 @@
       background: #4550D5 !important;
       box-shadow: 0 0 15px #70DBFF;
     }
+
+    /* 19EDO-specific key styles */
+    .music-piano-key.purple {
+      background: linear-gradient(135deg, #465BCF, #5670E9);
+      height: 100px;
+      top: 0;
+      color: #fff;
+      z-index: 10;
+      border-radius: 0 0 3px 3px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+    }
+
+    .music-piano-key.blue {
+      background: linear-gradient(135deg, #70DBFF, #6AC6E8);
+      height: 84px;
+      top: 0;
+      color: #fff;
+      z-index: 10;
+      border-radius: 0 0 3px 3px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+    }
+
+    .music-piano-key.purple.playing {
+      background: #4550D5 !important;
+      box-shadow: 0 0 15px #70DBFF;
+    }
+
+    .music-piano-key.blue.playing {
+      background: #4550D5 !important;
+      box-shadow: 0 0 15px #70DBFF;
+    }
     
     .music-piano-label {
       text-align: center;
@@ -1011,41 +1128,70 @@
   var pianoContainer = null;
   var pianoKeyElements = {};
   var pianoHighlightGeneration = 0;  // 高亮世代计数器
-  
+  var currentEdo = 12;  // 当前EDO模式
+
   // 钢琴音符到 MIDI 的映射
   var pianoMidiToNote = {};
+
+  // 19EDO键盘序列 (from 19edo-keyboard.html)
+  const EDO_19_KEY_SEQUENCE = [
+    "white",  // 1
+    "purple", "blue",   // 1-2 (large interval)
+    "white",  // 2
+    "purple", "blue",   // 2-3 (large interval)
+    "white",  // 3
+    "purple",           // 3-4 (small interval - purple only)
+    "white",  // 4
+    "purple", "blue",   // 4-5 (large interval)
+    "white",  // 5
+    "purple", "blue",   // 5-6 (large interval)
+    "white",  // 6
+    "purple", "blue",   // 6-7 (large interval)
+    "white",  // 7
+    "purple"            // 7-end (purple only)
+  ];
   
-  // 创建钢琴界面
-  function createPianoUI() {
+  // 创建钢琴界面 (EDO-aware)
+  function createPianoUI(edo) {
     if (pianoContainer) return;
-    
+
+    currentEdo = edo || 12;
     pianoContainer = document.createElement('div');
     pianoContainer.className = 'music-piano-container';
     pianoContainer.innerHTML = '<div class="music-piano-keys" id="musicPianoKeys"></div>';
     document.body.appendChild(pianoContainer);
-    
+
+    if (currentEdo === 19) {
+      create19EdoPiano();
+    } else {
+      create12EdoPiano();
+    }
+  }
+
+  // 12EDO钢琴创建 (原有逻辑)
+  function create12EdoPiano() {
     var pianoKeysDiv = document.getElementById('musicPianoKeys');
-    
+
     // 从 C2 到 C7 的音符（左右各加一个八度）
     var whiteNotes = [];
     var blackNotes = [];
-    
+
     for (var midi = 36; midi <= 96; midi++) {
       var noteName = midiToNoteName(midi);
       var isBlack = noteName.includes('#');
-      
+
       pianoMidiToNote[midi] = noteName;
-      
+
       if (isBlack) {
         blackNotes.push({ midi: midi, note: noteName });
       } else {
         whiteNotes.push({ midi: midi, note: noteName });
       }
     }
-    
+
     var whiteWidthPercent = 100 / whiteNotes.length;
     var blackWidthPercent = whiteWidthPercent * 0.6;
-    
+
     // 白键
     whiteNotes.forEach(function(item, index) {
       var key = document.createElement('div');
@@ -1054,31 +1200,31 @@
       key.dataset.note = item.note;
       key.style.left = (index * whiteWidthPercent) + '%';
       key.style.width = whiteWidthPercent + '%';
-      
+
       key.addEventListener('click', function() {
         playPianoNote(item.midi);
       });
-      
+
       pianoKeysDiv.appendChild(key);
       pianoKeyElements[item.midi] = key;
     });
-    
+
     // 黑键位置计算
     var blackPositions = {
       'C#': 0, 'D#': 1, 'F#': 3, 'G#': 4, 'A#': 5
     };
-    
+
     blackNotes.forEach(function(item) {
       var noteName = item.note.slice(0, -1);
       var octave = parseInt(item.note.slice(-1));
       var whiteIndex = -1;
-      
+
       // 找到该黑键左边的白键索引
       for (var i = 0; i < whiteNotes.length; i++) {
         var wn = whiteNotes[i].note;
         var wnName = wn.slice(0, -1);
         var wnOctave = parseInt(wn.slice(-1));
-        
+
         if (wnOctave === octave) {
           if (wnName === 'C' && noteName === 'C#') { whiteIndex = i; break; }
           if (wnName === 'D' && noteName === 'D#') { whiteIndex = i; break; }
@@ -1087,11 +1233,11 @@
           if (wnName === 'A' && noteName === 'A#') { whiteIndex = i; break; }
         }
       }
-      
+
       if (whiteIndex === -1) return;
-      
+
       var leftPercent = (whiteIndex + 1) * whiteWidthPercent - blackWidthPercent * 0.5;
-      
+
       // 计算等音名称
       var noteName = item.note.slice(0, -1);
       var octave = item.note.slice(-1);
@@ -1101,7 +1247,7 @@
       else if (noteName === 'F#') enharmonic = 'Gb';
       else if (noteName === 'G#') enharmonic = 'Ab';
       else if (noteName === 'A#') enharmonic = 'Bb';
-      
+
       var key = document.createElement('div');
       key.className = 'music-piano-key black';
       key.dataset.midi = item.midi;
@@ -1109,11 +1255,112 @@
       // 无文字
       key.style.left = leftPercent + '%';
       key.style.width = blackWidthPercent + '%';
-      
+
       key.addEventListener('click', function() {
         playPianoNote(item.midi);
       });
-      
+
+      pianoKeysDiv.appendChild(key);
+      pianoKeyElements[item.midi] = key;
+    });
+  }
+
+  // 19EDO钢琴创建 (新逻辑)
+  function create19EdoPiano() {
+    var pianoKeysDiv = document.getElementById('musicPianoKeys');
+    var whiteNotes = [];
+    var purpleNotes = [];
+    var blueNotes = [];
+
+    // 生成19EDO音符
+    // We want to create keys from approximately C2 to C7
+    // In 19EDO, C4 is position 0, so we want keys from position -38 to +57
+    var octaveCount = 5;
+    var startOctave = -2; // Start 2 octaves below C4
+    var endOctave = 3;    // End 3 octaves above C4
+
+    for (var oct = startOctave; oct < endOctave; oct++) {
+      for (var i = 0; i < EDO_19_KEY_SEQUENCE.length; i++) {
+        var keyType = EDO_19_KEY_SEQUENCE[i];
+        // Calculate 19EDO position from C4 (where C4 = 0)
+        var edo19Position = oct * 19 + i;
+
+        pianoMidiToNote[edo19Position] = keyType.charAt(0).toUpperCase() + keyType.slice(1);
+
+        if (keyType === 'white') {
+          whiteNotes.push({ midi: edo19Position, type: keyType, localIdx: i });
+        } else if (keyType === 'purple') {
+          purpleNotes.push({ midi: edo19Position, type: keyType, localIdx: i });
+        } else if (keyType === 'blue') {
+          blueNotes.push({ midi: edo19Position, type: keyType, localIdx: i });
+        }
+      }
+    }
+
+    var whiteWidthPercent = 100 / whiteNotes.length;
+
+    // 白键
+    whiteNotes.forEach(function(item, index) {
+      var key = document.createElement('div');
+      key.className = 'music-piano-key white';
+      key.dataset.midi = item.midi;
+      key.dataset.note = item.type;
+      key.style.left = (index * whiteWidthPercent) + '%';
+      key.style.width = whiteWidthPercent + '%';
+
+      key.addEventListener('click', function() {
+        playPianoNote19Edo(item.midi);
+      });
+
+      pianoKeysDiv.appendChild(key);
+      pianoKeyElements[item.midi] = key;
+    });
+
+    // 紫/蓝键位置计算 (based on 19edo-keyboard.html logic)
+    var allColoredNotes = purpleNotes.concat(blueNotes);
+    allColoredNotes.forEach(function(item) {
+      // 找到对应的白键位置
+      var whiteIndex = -1;
+      for (var i = 0; i < whiteNotes.length; i++) {
+        if (whiteNotes[i].midi > item.midi) {
+          whiteIndex = i - 1;
+          break;
+        }
+      }
+      if (whiteIndex === -1) whiteIndex = whiteNotes.length - 1;
+
+      // 根据间隔模式确定位置
+      var localPos = item.localIdx;
+      var leftPercent;
+      var widthPercent = whiteWidthPercent * 0.5;
+
+      // 单紫键 (间隔小)
+      if (item.type === 'purple' &&
+          (localPos === 6 || localPos === 18)) {
+        leftPercent = (whiteIndex + 0.5) * whiteWidthPercent - widthPercent / 2;
+      }
+      // 紫+蓝双键 (间隔大)
+      else if (localPos % 3 === 1 || localPos % 3 === 2) {
+        if (item.type === 'purple') {
+          leftPercent = (whiteIndex + 0.35) * whiteWidthPercent - widthPercent / 2;
+        } else { // blue
+          leftPercent = (whiteIndex + 0.65) * whiteWidthPercent - widthPercent / 2;
+        }
+      } else {
+        leftPercent = (whiteIndex + 0.5) * whiteWidthPercent - widthPercent / 2;
+      }
+
+      var key = document.createElement('div');
+      key.className = 'music-piano-key ' + item.type;
+      key.dataset.midi = item.midi;
+      key.dataset.note = item.type;
+      key.style.left = leftPercent + '%';
+      key.style.width = widthPercent + '%';
+
+      key.addEventListener('click', function() {
+        playPianoNote19Edo(item.midi);
+      });
+
       pianoKeysDiv.appendChild(key);
       pianoKeyElements[item.midi] = key;
     });
@@ -1172,11 +1419,57 @@
     osc2.start(now);
     osc2.stop(now + 0.6);
   }
+
+  // 播放19EDO钢琴音符
+  function playPianoNote19Edo(midi) {
+    if (!pianoAudioCtx) {
+      pianoAudioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    }
+
+    if (pianoAudioCtx.state === 'suspended') {
+      pianoAudioCtx.resume();
+    }
+
+    var freq = edoToFreq(midi, 19); // Use 19EDO frequency calculation
+    var now = pianoAudioCtx.currentTime;
+
+    // 主音 - 正弦波
+    var osc1 = pianoAudioCtx.createOscillator();
+    osc1.type = 'sine';
+    osc1.frequency.value = freq;
+
+    var gainNode1 = pianoAudioCtx.createGain();
+    gainNode1.gain.setValueAtTime(0, now);
+    gainNode1.gain.linearRampToValueAtTime(0.3, now + 0.005);
+    gainNode1.gain.linearRampToValueAtTime(0.15, now + 0.3);
+    gainNode1.gain.linearRampToValueAtTime(0.001, now + 0.8);
+
+    osc1.connect(gainNode1);
+    gainNode1.connect(pianoAudioCtx.destination);
+    osc1.start(now);
+    osc1.stop(now + 0.8);
+
+    // 泛音 - 让音色更亮
+    var osc2 = pianoAudioCtx.createOscillator();
+    osc2.type = 'sine';
+    osc2.frequency.value = freq * 2; // 高八度泛音
+
+    var gainNode2 = pianoAudioCtx.createGain();
+    gainNode2.gain.setValueAtTime(0, now);
+    gainNode2.gain.linearRampToValueAtTime(0.15, now + 0.005);
+    gainNode2.gain.linearRampToValueAtTime(0.08, now + 0.2);
+    gainNode2.gain.linearRampToValueAtTime(0.001, now + 0.6);
+
+    osc2.connect(gainNode2);
+    gainNode2.connect(pianoAudioCtx.destination);
+    osc2.start(now);
+    osc2.stop(now + 0.6);
+  }
   
   // 高亮钢琴按键（供外部调用）
   window.highlightPianoKey = function(midi, duration, generation) {
     if (!pianoContainer) {
-      createPianoUI();
+      createPianoUI(currentEdo || 12);
     }
     
     var keyEl = pianoKeyElements[midi];
@@ -1228,19 +1521,7 @@
     }
   };
   
-  // 初始化钢琴界面
-  function initPiano() {
-    // 延迟创建钢琴界面，确保 DOM 加载完成
-    setTimeout(function() {
-      createPianoUI();
-    }, 100);
-  }
-  
-  // 在页面加载时初始化钢琴
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', initPiano);
-  } else {
-    initPiano();
-  }
+  // 初始化钢琴界面 - 已移到 initPlayers 中统一处理
+  // 钢琴会根据第一个音乐代码块的 EDO 设置自动创建
 
 })();
