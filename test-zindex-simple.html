@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>极简z-index测试</title>
+    <style>
+        .container {
+            position: relative;
+            width: 300px;
+            height: 100px;
+            background: #ccc;
+            margin: 20px;
+        }
+        .box {
+            position: absolute;
+            width: 80px;
+            height: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            color: white;
+            border: 2px solid black;
+        }
+    </style>
+</head>
+<body>
+    <h1>测试1: 白键(z=1) + 紫键(z=100) - 白先添加</h1>
+    <div class="container" id="test1"></div>
+
+    <h1>测试2: 白键(z=1) + 紫键(z=100) - 紫先添加</h1>
+    <div class="container" id="test2"></div>
+
+    <h1>测试3: 白键(z=1) + 紫键(z=100) - 使用内联样式</h1>
+    <div class="container" id="test3"></div>
+
+    <script>
+        // 测试1: 白先紫后
+        const test1 = document.getElementById('test1');
+        const white1 = document.createElement('div');
+        white1.className = 'box';
+        white1.style.cssText = 'background: white; color: black; left: 10px; top: 20px; z-index: 1;';
+        white1.textContent = 'White z=1';
+        test1.appendChild(white1);
+
+        const purple1 = document.createElement('div');
+        purple1.className = 'box';
+        purple1.style.cssText = 'background: #9b59b6; left: 60px; top: 30px; z-index: 100;';
+        purple1.textContent = 'Purple z=100';
+        test1.appendChild(purple1);
+
+        // 测试2: 紫先白后
+        const test2 = document.getElementById('test2');
+        const purple2 = document.createElement('div');
+        purple2.className = 'box';
+        purple2.style.cssText = 'background: #9b59b6; left: 60px; top: 30px; z-index: 100;';
+        purple2.textContent = 'Purple z=100';
+        test2.appendChild(purple2);
+
+        const white2 = document.createElement('div');
+        white2.className = 'box';
+        white2.style.cssText = 'background: white; color: black; left: 10px; top: 20px; z-index: 1;';
+        white2.textContent = 'White z=1';
+        test2.appendChild(white2);
+
+        // 测试3: 使用类名
+        const test3 = document.getElementById('test3');
+        const white3 = document.createElement('div');
+        white3.className = 'box';
+        white3.style.cssText = 'background: white; color: black; left: 10px; top: 20px;';
+        white3.style.zIndex = '1';
+        white3.textContent = 'White';
+        test3.appendChild(white3);
+
+        const purple3 = document.createElement('div');
+        purple3.className = 'box';
+        purple3.style.cssText = 'background: #9b59b6; left: 60px; top: 30px;';
+        purple3.style.zIndex = '100';
+        purple3.textContent = 'Purple';
+        test3.appendChild(purple3);
+
+        console.log('所有元素已创建');
+        console.log('Test1子元素数量:', test1.children.length);
+        console.log('Test2子元素数量:', test2.children.length);
+        console.log('Test3子元素数量:', test3.children.length);
+    </script>
+</body>
+</html>

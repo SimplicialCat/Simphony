@@ -929,6 +929,9 @@
     }
 
     playBtn.addEventListener('click', function() {
+      // 切换键盘到当前音乐的EDO
+      switchPianoUI(score.edo);
+
       if (player.isPlaying) {
         player.pause();
         playBtn.textContent = '▶ 播放';
@@ -1164,10 +1167,26 @@
     "purple"            // 7-end (purple only)
   ];
   
+  // 销毁钢琴界面
+  function destroyPianoUI() {
+    if (pianoContainer) {
+      pianoContainer.remove();
+      pianoContainer = null;
+      pianoKeyElements = {};
+      pianoMidiToNote = {};
+    }
+  }
+
+  // 切换钢琴EDO模式
+  function switchPianoUI(edo) {
+    if (currentEdo === edo && pianoContainer) return; // 已经是目标EDO，无需切换
+
+    destroyPianoUI();
+    createPianoUI(edo);
+  }
+
   // 创建钢琴界面 (EDO-aware)
   function createPianoUI(edo) {
-    if (pianoContainer) return;
-
     currentEdo = edo || 12;
     pianoContainer = document.createElement('div');
     pianoContainer.className = 'music-piano-container';

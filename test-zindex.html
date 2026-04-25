@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Z-Index Test</title>
+    <style>
+        .container {
+            position: relative;
+            width: 400px;
+            height: 200px;
+            background: #f0f0f0;
+            margin: 20px;
+        }
+        .box {
+            position: absolute;
+            width: 100px;
+            height: 100px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+        }
+        .white-box {
+            background: #ccc;
+            width: 300px;
+            left: 50px;
+            top: 50px;
+        }
+        .colored-box {
+            background: #7EB8DA;
+            width: 60px;
+            left: 120px;
+            top: 60px;
+            height: 60px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Z-Index Test</h1>
+    <p>蓝框应该显示在灰框上方</p>
+
+    <div class="container" id="test1">
+        <div class="box white-box" style="z-index: 1">White (z=1)</div>
+        <div class="box colored-box" style="z-index: 100">Blue (z=100)</div>
+    </div>
+
+    <p>顺序相反：先白后蓝</p>
+    <div class="container" id="test2">
+    </div>
+
+    <p>顺序相反：先蓝后白</p>
+    <div class="container" id="test3">
+    </div>
+
+    <script>
+        // Test 2: 先添加白，后添加蓝
+        const test2 = document.getElementById('test2');
+        const white2 = document.createElement('div');
+        white2.className = 'box white-box';
+        white2.style.zIndex = '1';
+        white2.textContent = 'White first';
+        test2.appendChild(white2);
+
+        const blue2 = document.createElement('div');
+        blue2.className = 'box colored-box';
+        blue2.style.zIndex = '100';
+        blue2.textContent = 'Blue second';
+        test2.appendChild(blue2);
+
+        // Test 3: 先添加蓝，后添加白
+        const test3 = document.getElementById('test3');
+        const blue3 = document.createElement('div');
+        blue3.className = 'box colored-box';
+        blue3.style.zIndex = '100';
+        blue3.textContent = 'Blue first';
+        test3.appendChild(blue3);
+
+        const white3 = document.createElement('div');
+        white3.className = 'box white-box';
+        white3.style.zIndex = '1';
+        white3.textContent = 'White second';
+        test3.appendChild(white3);
+    </script>
+</body>
+</html>

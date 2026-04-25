@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>键盘调试</title>
+    <style>
+        body {
+            font-family: sans-serif;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .test-section {
+            background: white;
+            padding: 20px;
+            margin-bottom: 20px;
+            border-radius: 4px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .piano-keys {
+            position: relative;
+            height: 120px;
+            width: 100%;
+            max-width: 700px;
+            background: #e0e0e0;
+            margin: 10px 0;
+        }
+        .piano-key {
+            position: absolute;
+            cursor: pointer;
+            display: flex;
+            align-items: flex-end;
+            justify-content: center;
+            padding-bottom: 4px;
+            font-size: 10px;
+            box-sizing: border-box;
+            border: none;
+        }
+        .piano-key.white {
+            background: #fff;
+            height: 120px;
+            top: 0;
+            border-right: 1px solid #ccc;
+            border-radius: 0 0 4px 4px;
+        }
+        .piano-key.black {
+            background: #1a1a1a;
+            height: 72px;
+            top: 0;
+            color: #fff;
+            border-radius: 0 0 3px 3px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.4);
+        }
+        .piano-key.purple {
+            background: linear-gradient(135deg, #7EB8DA, #B5D4E8);
+            height: 60px;
+            top: 0;
+            color: #fff;
+            border-radius: 0 0 3px 3px;
+            box-shadow: 0 2px 6px rgba(126, 184, 218, 0.25);
+        }
+        .piano-key.blue {
+            background: linear-gradient(135deg, #B5D4E8, #E8F4F9);
+            height: 34px;
+            top: 0;
+            color: #3A5A7A;
+            border-radius: 0 0 3px 3px;
+            box-shadow: 0 2px 6px rgba(126, 184, 218, 0.25);
+        }
+        .info {
+            font-size: 12px;
+            color: #666;
+            margin-top: 10px;
+        }
+        .debug {
+            font-family: monospace;
+            font-size: 11px;
+            color: #999;
+            margin-top: 5px;
+        }
+    </style>
+</head>
+<body>
+    <h1>19-EDO 键盘测试</h1>
+
+    <div class="test-section">
+        <h2>19-EDO 键盘 (一个八度)</h2>
+        <div class="piano-keys" id="piano-19"></div>
+        <div class="info">紫键和蓝键应该显示在白键上方</div>
+        <div class="debug" id="debug"></div>
+    </div>
+
+    <script src="music-parser.js"></script>
+    <script>
+        const container = document.getElementById('piano-19');
+        const debugEl = document.getElementById('debug');
+
+        const EDO_19_KEY_SEQUENCE = MusicParser.EDO_19_KEY_SEQUENCE;
+        debugEl.innerHTML += 'EDO_19_KEY_SEQUENCE: ' + EDO_19_KEY_SEQUENCE.join(', ') + '<br>';
+
+        const whiteNotes = [];
+        const purpleNotes = [];
+        const blueNotes = [];
+
+        // 只创建一个八度
+        for (let i = 0; i < EDO_19_KEY_SEQUENCE.length; i++) {
+            const keyType = EDO_19_KEY_SEQUENCE[i];
+            if (keyType === 'white') {
+                whiteNotes.push({ midi: i, type: keyType, localIdx: i });
+            } else if (keyType === 'purple') {
+                purpleNotes.push({ midi: i, type: keyType, localIdx: i });
+            } else if (keyType === 'blue') {
+                blueNotes.push({ midi: i, type: keyType, localIdx: i });
+            }
+        }
+
+        debugEl.innerHTML += 'White keys: ' + whiteNotes.length + '<br>';
+        debugEl.innerHTML += 'Purple keys: ' + purpleNotes.length + '<br>';
+        debugEl.innerHTML += 'Blue keys: ' + blueNotes.length + '<br>';
+
+        const whiteWidthPercent = 100 / whiteNotes.length;
+        debugEl.innerHTML += 'White key width: ' + whiteWidthPercent.toFixed(2) + '%<br>';
+
+        // 先添加紫/蓝键
+        const allColoredNotes = purpleNotes.concat(blueNotes);
+        allColoredNotes.forEach(item => {
+            let whiteIndex = -1;
+            for (let i = 0; i < whiteNotes.length; i++) {
+                if (whiteNotes[i].midi > item.midi) {
+                    whiteIndex = i - 1;
+                    break;
+                }
+            }
+            if (whiteIndex === -1) whiteIndex = whiteNotes.length - 1;
+
+            const localPos = item.localIdx;
+            let leftPercent;
+            const widthPercent = whiteWidthPercent * 0.5;
+
+            if (item.type === 'purple' && (localPos === 7 || localPos === 18)) {
+                leftPercent = (whiteIndex + 0.7) * whiteWidthPercent;
+            } else if ((localPos === 1 || localPos === 2 ||
+                     localPos === 4 || localPos === 5 ||
+                     localPos === 9 || localPos === 10 ||
+                     localPos === 12 || localPos === 13 ||
+                     localPos === 15 || localPos === 16)) {
+                if (item.type === 'purple') {
+                    leftPercent = (whiteIndex + 0.55) * whiteWidthPercent;
+                } else {
+                    leftPercent = (whiteIndex + 0.85) * whiteWidthPercent;
+                }
+            } else {
+                leftPercent = (whiteIndex + 0.8) * whiteWidthPercent;
+            }
+
+            const key = document.createElement('div');
+            key.className = 'piano-key ' + item.type;
+            key.style.left = leftPercent + '%';
+            key.style.width = widthPercent + '%';
+            key.style.top = '0';  // 添加top属性
+            key.style.zIndex = '100';
+            key.style.position = 'absolute';
+            key.textContent = item.midi;
+            container.appendChild(key);
+            console.log('Added', item.type, 'key at', leftPercent + '%', 'z-index:', 100);
+        });
+
+        // 后添加白键
+        whiteNotes.forEach((item, index) => {
+            const key = document.createElement('div');
+            key.className = 'piano-key white';
+            key.style.left = (index * whiteWidthPercent) + '%';
+            key.style.width = whiteWidthPercent + '%';
+            key.style.zIndex = '1';
+            key.style.position = 'absolute';
+            key.textContent = item.midi;
+            container.appendChild(key);
+            console.log('Added white key at', (index * whiteWidthPercent) + '%', 'z-index:', 1);
+        });
+
+        debugEl.innerHTML += 'Total keys created: ' + container.children.length + '<br>';
+    </script>
+</body>
+</html>

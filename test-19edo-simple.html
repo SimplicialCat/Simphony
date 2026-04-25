@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Simple 19-EDO Test</title>
+    <style>
+        body {
+            font-family: sans-serif;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .piano-keys {
+            position: relative;
+            height: 120px;
+            width: 700px;
+            background: #e0e0e0;
+            margin: 10px 0;
+            border: 2px solid #333;
+        }
+        .key {
+            position: absolute;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 10px;
+            font-weight: bold;
+            color: white;
+            border: 1px solid #000;
+        }
+        .white {
+            background: #fff;
+            color: #000;
+            z-index: 1;
+        }
+        .purple {
+            background: #9b59b6;
+            z-index: 100;
+        }
+        .blue {
+            background: #3498db;
+            z-index: 100;
+        }
+    </style>
+</head>
+<body>
+    <h1>Simple 19-EDO Test (First 10 keys)</h1>
+    <div class="piano-keys" id="piano"></div>
+
+    <script>
+        const container = document.getElementById('piano');
+        const EDO_19_KEY_SEQUENCE = [
+            "white", "purple", "blue", "white", "purple", "blue",
+            "white", "purple", "white", "purple", "blue", "white",
+            "purple", "blue", "white", "purple", "blue", "white", "purple"
+        ];
+
+        // 只创建前10个键
+        const numKeysToShow = 10;
+        const whiteCount = EDO_19_KEY_SEQUENCE.slice(0, numKeysToShow).filter(t => t === 'white').length;
+        const whiteWidth = 100 / whiteCount;
+
+        console.log('White keys in first 10:', whiteCount);
+        console.log('White width:', whiteWidth);
+
+        let whiteIndex = 0;
+        for (let i = 0; i < numKeysToShow; i++) {
+            const keyType = EDO_19_KEY_SEQUENCE[i];
+            const key = document.createElement('div');
+            key.className = 'key ' + keyType;
+            key.textContent = i;
+
+            if (keyType === 'white') {
+                key.style.left = (whiteIndex * whiteWidth) + '%';
+                key.style.width = whiteWidth + '%';
+                key.style.height = '120px';
+                key.style.top = '0';
+                whiteIndex++;
+            } else {
+                // Purple or blue
+                key.style.left = ((whiteIndex - 1) * whiteWidth + whiteWidth * 0.5) + '%';
+                key.style.width = (whiteWidth * 0.4) + '%';
+                key.style.height = '60px';
+                key.style.top = '0';
+            }
+
+            container.appendChild(key);
+            console.log('Key', i, 'type=' + keyType, 'left=' + key.style.left, 'z-index=' + key.style.zIndex);
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>钢琴键盘测试</title>
+    <style>
+        body {
+            font-family: sans-serif;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .test-section {
+            background: white;
+            padding: 20px;
+            margin-bottom: 20px;
+            border-radius: 4px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .piano-keys {
+            position: relative;
+            height: 105px;
+            width: 100%;
+            max-width: 700px;
+            background: #e0e0e0;
+            margin: 10px 0;
+        }
+        .piano-key {
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            cursor: pointer;
+            border-radius: 0 0 4px 4px;
+        }
+        .piano-key.white {
+            background: #fff;
+            border: 1px solid #ccc;
+            border-top: none;
+            z-index: 1;
+        }
+        .piano-key.black {
+            background: #333;
+            z-index: 2;
+            border-radius: 0 0 3px 3px;
+            height: 60%;
+            top: 0;
+        }
+        .piano-key.purple {
+            background: #9b59b6;
+            border: 1px solid #8e44ad;
+            height: 60%;
+            top: 0;
+        }
+        .piano-key.blue {
+            background: #3498db;
+            border: 1px solid #2980b9;
+            height: 60%;
+            top: 0;
+        }
+        .piano-key:hover {
+            opacity: 0.8;
+        }
+        .info {
+            font-size: 12px;
+            color: #666;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+    <h1>钢琴键盘测试</h1>
+
+    <div class="test-section">
+        <h2>12-EDO 键盘 (标准钢琴)</h2>
+        <div class="piano-keys" id="piano-12"></div>
+        <div class="info">应该看到白键和黑键，黑键较短且位于白键之间</div>
+    </div>
+
+    <div class="test-section">
+        <h2>19-EDO 键盘</h2>
+        <div class="piano-keys" id="piano-19"></div>
+        <div class="info">应该看到白键、紫键和蓝键，紫蓝键较短</div>
+    </div>
+
+    <script>
+        function create12EdoPiano() {
+            const container = document.getElementById('piano-12');
+            container.innerHTML = '';
+
+            const whiteNotes = [];
+            const blackNotes = [];
+
+            for (let midi = 48; midi <= 72; midi++) {
+                const noteName = midiToNoteName(midi);
+                const isBlack = noteName.includes('#');
+
+                if (isBlack) {
+                    blackNotes.push({ midi, note: noteName });
+                } else {
+                    whiteNotes.push({ midi, note: noteName });
+                }
+            }
+
+            const whiteWidthPercent = 100 / whiteNotes.length;
+            const blackWidthPercent = whiteWidthPercent * 0.6;
+
+            // 白键
+            whiteNotes.forEach((item, index) => {
+                const key = document.createElement('div');
+                key.className = 'piano-key white';
+                key.style.left = (index * whiteWidthPercent) + '%';
+                key.style.width = whiteWidthPercent + '%';
+                key.title = item.note;
+                container.appendChild(key);
+            });
+
+            // 黑键
+            const blackToLeftWhite = {
+                'C#': 'C', 'D#': 'D', 'F#': 'F', 'G#': 'G', 'A#': 'A'
+            };
+
+            blackNotes.forEach(item => {
+                const noteName = item.note.slice(0, -1);
+                const octave = parseInt(item.note.slice(-1));
+                const leftWhiteName = blackToLeftWhite[noteName];
+
+                if (!leftWhiteName) return;
+
+                let whiteIndex = -1;
+                for (let i = 0; i < whiteNotes.length; i++) {
+                    if (whiteNotes[i].note === leftWhiteName + octave) {
+                        whiteIndex = i;
+                        break;
+                    }
+                }
+
+                if (whiteIndex >= 0) {
+                    const key = document.createElement('div');
+                    key.className = 'piano-key black';
+                    key.style.left = (whiteIndex * whiteWidthPercent + whiteWidthPercent * 0.65) + '%';
+                    key.style.width = blackWidthPercent + '%';
+                    key.title = item.note;
+                    container.appendChild(key);
+                }
+            });
+        }
+
+        function create19EdoPiano() {
+            const container = document.getElementById('piano-19');
+            container.innerHTML = '';
+
+            const EDO_19_KEY_SEQUENCE = [
+                "white", "purple", "blue", "white", "purple", "blue",
+                "white", "purple", "white", "purple", "blue", "white",
+                "purple", "blue", "white", "purple", "blue", "white", "purple"
+            ];
+
+            const whiteNotes = [];
+            const purpleNotes = [];
+            const blueNotes = [];
+
+            for (let oct = 0; oct < 2; oct++) {
+                for (let i = 0; i < EDO_19_KEY_SEQUENCE.length; i++) {
+                    const keyType = EDO_19_KEY_SEQUENCE[i];
+                    const edo19Position = oct * 19 + i;
+
+                    if (keyType === 'white') {
+                        whiteNotes.push({ midi: edo19Position, type: keyType, localIdx: i });
+                    } else if (keyType === 'purple') {
+                        purpleNotes.push({ midi: edo19Position, type: keyType, localIdx: i });
+                    } else if (keyType === 'blue') {
+                        blueNotes.push({ midi: edo19Position, type: keyType, localIdx: i });
+                    }
+                }
+            }
+
+            const whiteWidthPercent = 100 / whiteNotes.length;
+
+            // 白键
+            whiteNotes.forEach((item, index) => {
+                const key = document.createElement('div');
+                key.className = 'piano-key white';
+                key.style.left = (index * whiteWidthPercent) + '%';
+                key.style.width = whiteWidthPercent + '%';
+                container.appendChild(key);
+            });
+
+            // 紫/蓝键
+            const allColoredNotes = purpleNotes.concat(blueNotes);
+            allColoredNotes.forEach(item => {
+                let whiteIndex = -1;
+                for (let i = 0; i < whiteNotes.length; i++) {
+                    if (whiteNotes[i].midi > item.midi) {
+                        whiteIndex = i - 1;
+                        break;
+                    }
+                }
+                if (whiteIndex === -1) whiteIndex = whiteNotes.length - 1;
+
+                const localPos = item.localIdx;
+                let leftPercent;
+                const widthPercent = whiteWidthPercent * 0.5;
+
+                if (item.type === 'purple' && (localPos === 7 || localPos === 18)) {
+                    leftPercent = (whiteIndex + 0.7) * whiteWidthPercent;
+                }
+                else if ((localPos === 1 || localPos === 2 ||
+                         localPos === 4 || localPos === 5 ||
+                         localPos === 9 || localPos === 10 ||
+                         localPos === 12 || localPos === 13 ||
+                         localPos === 15 || localPos === 16)) {
+                    if (item.type === 'purple') {
+                        leftPercent = (whiteIndex + 0.55) * whiteWidthPercent;
+                    } else {
+                        leftPercent = (whiteIndex + 0.85) * whiteWidthPercent;
+                    }
+                } else {
+                    leftPercent = (whiteIndex + 0.8) * whiteWidthPercent;
+                }
+
+                const key = document.createElement('div');
+                key.className = 'piano-key ' + item.type;
+                key.style.left = leftPercent + '%';
+                key.style.width = widthPercent + '%';
+                container.appendChild(key);
+            });
+        }
+
+        function midiToNoteName(midi) {
+            const notes = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
+            const octave = Math.floor(midi / 12) - 1;
+            const note = notes[midi % 12];
+            return note + octave;
+        }
+
+        // 初始化
+        create12EdoPiano();
+        create19EdoPiano();
+    </script>
+</body>
+</html>

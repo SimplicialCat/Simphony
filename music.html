@@ -1,0 +1,887 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>音乐编辑器 · Focalina</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        /* 芙宁娜蓝配色方案 - Muted Monochromatic Blue Palette */
+        :root {
+            --focalina-blue-light: #E8F4F9;
+            --focalina-blue-mid: #B5D4E8;
+            --focalina-blue: #7EB8DA;
+            --focalina-blue-dark: #4A7A9A;
+            --focalina-blue-darker: #2A4A6A;
+            --focalina-text: #3A5A7A;
+            --focalina-text-light: #6A8A9A;
+            --focalina-border: #D0E4F0;
+            --focalina-bg: #F5F9FC;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            background: var(--focalina-bg);
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            color: var(--focalina-text);
+        }
+
+        /* 顶部控制栏 */
+        .controls {
+            background: #fff;
+            padding: 16px 24px;
+            border-bottom: 1px solid var(--focalina-border);
+            display: flex;
+            align-items: center;
+            gap: 24px;
+            flex-shrink: 0;
+        }
+
+        .controls button {
+            background: transparent;
+            color: var(--focalina-blue-dark);
+            border: none;
+            padding: 8px 16px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            position: relative;
+            letter-spacing: 0.3px;
+        }
+
+        .controls button::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 50%;
+            width: 0;
+            height: 2px;
+            background: var(--focalina-blue);
+            transition: all 0.2s ease;
+            transform: translateX(-50%);
+        }
+
+        .controls button:hover {
+            color: var(--focalina-blue);
+        }
+
+        .controls button:hover::after {
+            width: 80%;
+        }
+
+        .controls button.active {
+            color: var(--focalina-blue);
+        }
+
+        .controls button.active::after {
+            width: 80%;
+        }
+
+        .controls button:disabled {
+            color: var(--focalina-border);
+            cursor: not-allowed;
+        }
+
+        .controls button:disabled::after {
+            display: none;
+        }
+
+        .status {
+            margin-left: auto;
+            font-size: 13px;
+            color: var(--focalina-text-light);
+            font-weight: 400;
+        }
+
+        /* 主编辑区域 */
+        .editor-container {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            padding: 24px;
+            overflow: hidden;
+        }
+
+        .editor-wrapper {
+            flex: 1;
+            background: #fff;
+            border: 1px solid var(--focalina-border);
+            border-radius: 8px;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 2px 8px rgba(126, 184, 218, 0.08);
+        }
+
+        .editor-header {
+            padding: 10px 16px;
+            background: var(--focalina-light);
+            border-bottom: 1px solid var(--focalina-border);
+            font-size: 12px;
+            color: var(--focalina-text-light);
+            font-weight: 500;
+            letter-spacing: 0.3px;
+        }
+
+        /* 代码编辑器 */
+        .code-editor {
+            flex: 1;
+            display: flex;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .line-numbers {
+            width: 40px;
+            background: var(--focalina-bg);
+            border-right: 1px solid var(--focalina-border);
+            padding: 20px 8px;
+            text-align: right;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            font-size: 15px; /* 与textarea字体大小一致 */
+            line-height: 25.5px; /* 固定行高 */
+            color: var(--focalina-text-light);
+            user-select: none;
+            overflow: hidden;
+        }
+
+        .line-number {
+            height: 25.5px; /* 固定高度，与textarea行高匹配 */
+            color: var(--focalina-text-light);
+            transition: background 0.2s, color 0.2s;
+            border-radius: 3px;
+            padding-right: 4px;
+        }
+
+        .line-number.active {
+            background: var(--focalina-mid) !important;
+            color: var(--focalina-blue-dark) !important;
+            font-weight: 600;
+        }
+
+        #music-input {
+            flex: 1;
+            border: none;
+            padding: 20px;
+            padding-left: 12px;
+            font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', 'Consolas', monospace;
+            font-size: 15px;
+            line-height: 25.5px; /* 固定行高，与行号一致 */
+            resize: none;
+            outline: none;
+            color: var(--focalina-text);
+            background: transparent;
+        }
+
+        #music-input::placeholder {
+            color: var(--focalina-text-light);
+            font-style: italic;
+        }
+
+        /* 底部钢琴键盘 */
+        .piano-container {
+            background: #fff;
+            border-top: 1px solid var(--focalina-border);
+            padding: 12px 24px 16px;
+            flex-shrink: 0;
+        }
+
+        .piano-keys {
+            position: relative;
+            height: 120px;
+            min-width: 700px;
+            max-width: 90%;
+            margin: 0 auto;
+        }
+
+        .piano-key {
+            position: absolute;
+            cursor: pointer;
+            display: flex;
+            align-items: flex-end;
+            justify-content: center;
+            padding-bottom: 4px;
+            font-size: 10px;
+            font-weight: 300;
+            user-select: none;
+            transition: all 0.05s, transform 0.05s;
+            box-sizing: border-box;
+            border: none;
+        }
+
+        .piano-key:active {
+            transform: scaleY(0.92);
+        }
+
+        .piano-key.white {
+            background: #fff;  /* 纯白色 */
+            height: 120px;
+            top: 0;
+            color: #333;
+            border-right: 1px solid #ccc;
+            border-radius: 0 0 4px 4px;
+        }
+
+        .piano-key.white:hover {
+            background: #e0e0e0;
+        }
+
+        .piano-key.white.playing {
+            background: #7EB8DA !important;  /* 明显的蓝色高亮 */
+        }
+
+        .piano-key.black {
+            background: #1a1a1a;
+            height: 72px;
+            top: 0;
+            color: #fff;
+            z-index: 10;
+            border-radius: 0 0 3px 3px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.4);
+        }
+
+        .piano-key.black:hover {
+            background: #2a2a2a;
+        }
+
+        .piano-key.black.playing {
+            background: var(--focalina-blue-dark) !important;
+            box-shadow: 0 0 12px var(--focalina-blue);
+        }
+
+        /* 19EDO 特殊键色 - 使用明显颜色 */
+        .piano-key.purple {
+            background: #9b59b6;  /* 紫色 - 使用明显的颜色 */
+            height: 60px;
+            top: 0;
+            color: #fff;
+            border-radius: 0 0 3px 3px;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+            border: 1px solid #8e44ad;
+        }
+
+        .piano-key.purple:hover {
+            background: #8e44ad;
+        }
+
+        .piano-key.purple.playing {
+            background: #6c3483 !important;
+            box-shadow: 0 0 12px #9b59b6 !important;
+        }
+
+        .piano-key.blue {
+            background: #3498db;  /* 蓝色 - 使用明显的颜色 */
+            height: 34px;
+            top: 0;
+            color: #fff;
+            border-radius: 0 0 3px 3px;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+            border: 1px solid #2980b9;
+        }
+
+        .piano-key.blue:hover {
+            background: #2980b9;
+        }
+
+        .piano-key.blue.playing {
+            background: #1a5276 !important;
+            box-shadow: 0 0 12px #3498db !important;
+        }
+
+        /* 进度条 */
+        .progress-container {
+            width: 100%;
+            height: 3px;
+            background: var(--focalina-border);
+            margin-top: 12px;
+            cursor: pointer;
+            border-radius: 2px;
+            overflow: hidden;
+        }
+
+        .progress-bar {
+            height: 100%;
+            background: var(--focalina-blue);
+            width: 0%;
+            transition: width 0.1s linear;
+        }
+
+        /* 错误提示 */
+        .error {
+            position: fixed;
+            top: 70px;
+            right: 24px;
+            background: var(--focalina-blue-dark);
+            color: white;
+            padding: 14px 18px;
+            border-radius: 6px;
+            font-size: 13px;
+            box-shadow: 0 4px 12px rgba(74, 122, 154, 0.2);
+            z-index: 10000;
+            display: none;
+        }
+
+        .error.show {
+            display: block;
+            animation: slideIn 0.3s ease;
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- 顶部控制栏 -->
+    <div class="controls">
+        <button id="play-btn">播放</button>
+        <button id="stop-btn">停止</button>
+        <span class="status" id="status">就绪</span>
+    </div>
+
+    <!-- 主编辑区域 -->
+    <div class="editor-container">
+        <div class="editor-wrapper">
+            <div class="editor-header">音乐记谱法 · 12-EDO / 19-EDO</div>
+            <div class="code-editor">
+                <div class="line-numbers" id="line-numbers"></div>
+                <textarea id="music-input" placeholder="输入音乐代码...
+                    spellcheck="false"></textarea>
+            </div>
+        </div>
+        <div class="progress-container" id="progress">
+            <div class="progress-bar" id="progress-bar"></div>
+        </div>
+    </div>
+
+    <!-- 底部钢琴键盘 -->
+    <div class="piano-container">
+        <div class="piano-keys" id="piano-keys"></div>
+    </div>
+
+    <!-- 错误提示 -->
+    <div class="error" id="error"></div>
+
+    <script src="music-parser.js"></script>
+    <script>
+        // ==================== 编辑器逻辑 ====================
+
+        const musicInput = document.getElementById('music-input');
+        const lineNumbersEl = document.getElementById('line-numbers');
+        const playBtn = document.getElementById('play-btn');
+        const stopBtn = document.getElementById('stop-btn');
+        const statusEl = document.getElementById('status');
+        const progressBar = document.getElementById('progress-bar');
+        const progressContainer = document.getElementById('progress');
+        const pianoKeysEl = document.getElementById('piano-keys');
+        const errorEl = document.getElementById('error');
+
+        let currentPlayer = null;
+        let currentEdo = 12;
+        let pianoKeyElements = {};
+        let animationFrame = null;
+        let highlightTimeouts = [];  // 跟踪所有高亮timeout
+        let isPlaybackActive = false;  // 跟踪播放是否激活
+        let activeLines = new Set();  // 当前高亮的行号
+
+        // 更新行号显示
+        function updateLineNumbers() {
+            const lines = musicInput.value.split('\n');
+            lineNumbersEl.innerHTML = lines.map((_, i) => {
+                const lineNum = i + 1;
+                const isActive = activeLines.has(lineNum);
+                return `<div class="line-number ${isActive ? 'active' : ''}">${lineNum}</div>`;
+            }).join('');
+
+            // 确保行号容器高度与textarea一致
+            const scrollHeight = musicInput.scrollHeight;
+            lineNumbersEl.style.height = scrollHeight + 'px';
+        }
+
+        // 监听输入变化，更新行号
+        musicInput.addEventListener('input', updateLineNumbers);
+        musicInput.addEventListener('scroll', () => {
+            lineNumbersEl.scrollTop = musicInput.scrollTop;
+        });
+
+        // 默认示例代码 - 展示多声部
+        const defaultCode = `let edo = 12
+let key = C
+let bpm = 120
+
+// 多声部示例：第一声部（主旋律）
+1 3 5 - 3 2 1 - 1 - - -
+
+// 第二声部（低音，用 | 开头表示新声部）
+| 1 - - - 5 - - - 1 - - -
+
+// 第三声部（和声填充）
+| _5 _3 1 - _5 _4 3 - _5 _3 1 -
+
+// 空行后是新乐句
+1 - - - 3 - - - 5 - - -
+| _1 _3 _5 - _1 _4 _6 - _1 _5 _1 -`;
+
+        musicInput.value = defaultCode;
+
+        // ==================== 钢琴键盘创建 ====================
+
+        function create12EdoPiano() {
+            pianoKeysEl.innerHTML = '';
+            pianoKeyElements = {};
+
+            const whiteNotes = [];
+            const blackNotes = [];
+
+            for (let midi = 36; midi <= 84; midi++) {
+                const noteName = midiToNoteName(midi);
+                const isBlack = noteName.includes('#');
+
+                if (isBlack) {
+                    blackNotes.push({ midi, note: noteName });
+                } else {
+                    whiteNotes.push({ midi, note: noteName });
+                }
+            }
+
+            const whiteWidthPercent = 100 / whiteNotes.length;
+            const blackWidthPercent = whiteWidthPercent * 0.6;
+
+            // 白键
+            whiteNotes.forEach((item, index) => {
+                const key = document.createElement('div');
+                key.className = 'piano-key white';
+                key.dataset.midi = item.midi;
+                key.style.left = (index * whiteWidthPercent) + '%';
+                key.style.width = whiteWidthPercent + '%';
+                key.style.zIndex = '1';  // 明确设置z-index
+
+                key.addEventListener('click', () => playPianoNote(item.midi));
+                pianoKeysEl.appendChild(key);
+                pianoKeyElements[item.midi] = key;
+            });
+
+            // 黑键创建
+            // 黑键位于两个白键之间：C#在C和D之间，D#在D和E之间，等等
+            blackNotes.forEach(item => {
+                const noteName = item.note.slice(0, -1);  // 'C#', 'D#', etc.
+                const octave = parseInt(item.note.slice(-1));
+                let whiteIndex = -1;
+
+                // 找到黑键左边的白键
+                const blackToLeftWhite = {
+                    'C#': 'C', 'D#': 'D', 'F#': 'F', 'G#': 'G', 'A#': 'A'
+                };
+
+                const leftWhiteName = blackToLeftWhite[noteName];
+                if (!leftWhiteName) return;
+
+                // 找到对应的白键索引
+                for (let i = 0; i < whiteNotes.length; i++) {
+                    const wn = whiteNotes[i].note;
+                    if (wn === leftWhiteName + octave) {
+                        whiteIndex = i;
+                        break;
+                    }
+                }
+
+                if (whiteIndex >= 0) {
+                    const key = document.createElement('div');
+                    key.className = 'piano-key black';
+                    key.dataset.midi = item.midi;
+                    key.style.left = (whiteIndex * whiteWidthPercent + whiteWidthPercent * 0.65) + '%';
+                    key.style.width = blackWidthPercent + '%';
+                    key.style.zIndex = '10';  // 黑键在白键上方
+
+                    key.addEventListener('click', () => playPianoNote(item.midi));
+                    pianoKeysEl.appendChild(key);
+                    pianoKeyElements[item.midi] = key;
+                }
+            });
+        }
+
+        function create19EdoPiano() {
+            pianoKeysEl.innerHTML = '';
+            pianoKeyElements = {};
+
+            const whiteNotes = [];
+            const purpleNotes = [];
+            const blueNotes = [];
+
+            // 从C0开始，创建约5个八度
+            // 这样可以覆盖从低八度到高八度的所有音符
+            const startOctave = 0;
+            const endOctave = 5;
+
+            for (let oct = startOctave; oct < endOctave; oct++) {
+                for (let i = 0; i < MusicParser.EDO_19_KEY_SEQUENCE.length; i++) {
+                    const keyType = MusicParser.EDO_19_KEY_SEQUENCE[i];
+                    const edo19Position = oct * 19 + i;
+
+                    if (keyType === 'white') {
+                        whiteNotes.push({ midi: edo19Position, type: keyType, localIdx: i });
+                    } else if (keyType === 'purple') {
+                        purpleNotes.push({ midi: edo19Position, type: keyType, localIdx: i });
+                    } else if (keyType === 'blue') {
+                        blueNotes.push({ midi: edo19Position, type: keyType, localIdx: i });
+                    }
+                }
+            }
+
+            const whiteWidthPercent = 100 / whiteNotes.length;
+
+            console.log('=== 19-EDO 键盘创建 ===');
+            console.log('whiteNotes.length:', whiteNotes.length);
+            console.log('purpleNotes.length:', purpleNotes.length);
+            console.log('blueNotes.length:', blueNotes.length);
+            console.log('whiteWidthPercent:', whiteWidthPercent);
+
+            // 白键 - 先添加到DOM（在底层）
+            console.log('创建白键...');
+            whiteNotes.forEach((item, index) => {
+                const key = document.createElement('div');
+                key.className = 'piano-key white';
+                key.dataset.midi = item.midi;
+                key.style.left = (index * whiteWidthPercent) + '%';
+                key.style.width = whiteWidthPercent + '%';
+                key.style.top = '0';
+                key.style.zIndex = '1';
+                key.style.position = 'absolute';
+
+                key.addEventListener('click', () => playPianoNote19Edo(item.midi));
+                pianoKeysEl.appendChild(key);
+                pianoKeyElements[item.midi] = key;
+            });
+            console.log('白键创建完成，共', pianoKeysEl.children.length, '个元素');
+
+            // 紫/蓝键 - 后添加到DOM（在上层）
+            console.log('创建紫/蓝键...');
+            const allColoredNotes = purpleNotes.concat(blueNotes);
+            allColoredNotes.forEach(item => {
+                // 找到对应的白键位置
+                let whiteIndex = -1;
+                for (let i = 0; i < whiteNotes.length; i++) {
+                    if (whiteNotes[i].midi > item.midi) {
+                        whiteIndex = i - 1;
+                        break;
+                    }
+                }
+                if (whiteIndex === -1) whiteIndex = whiteNotes.length - 1;
+
+                // 根据间隔模式确定位置
+                const localPos = item.localIdx;
+                let leftPercent;
+                const widthPercent = whiteWidthPercent * 0.5;
+
+                // 单紫键 (间隔小)
+                if (item.type === 'purple' && (localPos === 7 || localPos === 18)) {
+                    leftPercent = (whiteIndex + 0.7) * whiteWidthPercent;
+                }
+                // 紫+蓝双键 (间隔大)
+                else if ((localPos === 1 || localPos === 2 ||
+                         localPos === 4 || localPos === 5 ||
+                         localPos === 9 || localPos === 10 ||
+                         localPos === 12 || localPos === 13 ||
+                         localPos === 15 || localPos === 16)) {
+                    if (item.type === 'purple') {
+                        leftPercent = (whiteIndex + 0.55) * whiteWidthPercent;
+                    } else { // blue
+                        leftPercent = (whiteIndex + 0.85) * whiteWidthPercent;
+                    }
+                } else {
+                    leftPercent = (whiteIndex + 0.8) * whiteWidthPercent;
+                }
+
+                const key = document.createElement('div');
+                key.className = 'piano-key ' + item.type;
+                key.dataset.midi = item.midi;
+                key.style.left = leftPercent + '%';
+                key.style.width = widthPercent + '%';
+                key.style.top = '0';
+                key.style.zIndex = '100';
+                key.style.position = 'absolute';
+
+                key.addEventListener('click', () => playPianoNote19Edo(item.midi));
+                pianoKeysEl.appendChild(key);
+                pianoKeyElements[item.midi] = key;
+            });
+            console.log('紫/蓝键创建完成，总共', pianoKeysEl.children.length, '个元素');
+            console.log('19-EDO 键盘创建完成');
+        }
+
+        function switchPiano(edo) {
+            if (currentEdo === edo) return;
+            currentEdo = edo;
+            if (edo === 19) {
+                create19EdoPiano();
+            } else {
+                create12EdoPiano();
+            }
+        }
+
+        function midiToNoteName(midi) {
+            const notes = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
+            const octave = Math.floor(midi / 12) - 1;
+            const note = notes[midi % 12];
+            return note + octave;
+        }
+
+        // ==================== 钢琴播放 ====================
+
+        let pianoAudioCtx = null;
+
+        function playPianoNote(midi) {
+            if (!pianoAudioCtx) {
+                pianoAudioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            }
+            if (pianoAudioCtx.state === 'suspended') {
+                pianoAudioCtx.resume();
+            }
+
+            const freq = 440 * Math.pow(2, (midi - 69) / 12);
+            const now = pianoAudioCtx.currentTime;
+
+            const osc1 = pianoAudioCtx.createOscillator();
+            osc1.type = 'sine';
+            osc1.frequency.value = freq;
+
+            const gainNode1 = pianoAudioCtx.createGain();
+            gainNode1.gain.setValueAtTime(0, now);
+            gainNode1.gain.linearRampToValueAtTime(0.3, now + 0.005);
+            gainNode1.gain.linearRampToValueAtTime(0.15, now + 0.3);
+            gainNode1.gain.linearRampToValueAtTime(0.001, now + 0.8);
+
+            osc1.connect(gainNode1);
+            gainNode1.connect(pianoAudioCtx.destination);
+            osc1.start(now);
+            osc1.stop(now + 0.8);
+
+            highlightKey(midi, 200);
+        }
+
+        function playPianoNote19Edo(midi) {
+            if (!pianoAudioCtx) {
+                pianoAudioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            }
+            if (pianoAudioCtx.state === 'suspended') {
+                pianoAudioCtx.resume();
+            }
+
+            // 19-EDO频率计算：midi从C0=0开始，C4的位置是76
+            const c4Position = 4 * 19;  // 76
+            const freq = 261.6256 * Math.pow(2, (midi - c4Position) / 19);
+            const now = pianoAudioCtx.currentTime;
+
+            const osc1 = pianoAudioCtx.createOscillator();
+            osc1.type = 'sine';
+            osc1.frequency.value = freq;
+
+            const gainNode1 = pianoAudioCtx.createGain();
+            gainNode1.gain.setValueAtTime(0, now);
+            gainNode1.gain.linearRampToValueAtTime(0.3, now + 0.005);
+            gainNode1.gain.linearRampToValueAtTime(0.15, now + 0.3);
+            gainNode1.gain.linearRampToValueAtTime(0.001, now + 0.8);
+
+            osc1.connect(gainNode1);
+            gainNode1.connect(pianoAudioCtx.destination);
+            osc1.start(now);
+            osc1.stop(now + 0.8);
+
+            const osc2 = pianoAudioCtx.createOscillator();
+            osc2.type = 'sine';
+            osc2.frequency.value = freq * 2;
+
+            const gainNode2 = pianoAudioCtx.createGain();
+            gainNode2.gain.setValueAtTime(0, now);
+            gainNode2.gain.linearRampToValueAtTime(0.15, now + 0.005);
+            gainNode2.gain.linearRampToValueAtTime(0.001, now + 0.6);
+
+            osc2.connect(gainNode2);
+            gainNode2.connect(pianoAudioCtx.destination);
+            osc2.start(now);
+            osc2.stop(now + 0.6);
+
+            highlightKey(midi, 200);
+        }
+
+        function highlightKey(midi, duration) {
+            const key = pianoKeyElements[midi];
+            console.log('highlightKey called: midi=', midi, 'key exists:', !!key);
+            if (key) {
+                key.classList.add('playing');
+                console.log('Added playing class to midi', midi);
+                const timeoutId = setTimeout(() => {
+                    key.classList.remove('playing');
+                    console.log('Removed playing class from midi', midi);
+                    // 从数组中移除已完成的timeout
+                    const index = highlightTimeouts.indexOf(timeoutId);
+                    if (index > -1) {
+                        highlightTimeouts.splice(index, 1);
+                    }
+                }, duration);
+                // 存储timeout ID
+                highlightTimeouts.push(timeoutId);
+            }
+        }
+
+        function clearAllHighlights() {
+            // 清除所有排队的timeout
+            highlightTimeouts.forEach(timeoutId => {
+                clearTimeout(timeoutId);
+            });
+            highlightTimeouts = [];
+
+            // 移除所有键的 playing 类
+            Object.values(pianoKeyElements).forEach(key => {
+                key.classList.remove('playing');
+            });
+        }
+
+        // ==================== 音乐播放 ====================
+
+        function showError(message) {
+            errorEl.textContent = message;
+            errorEl.classList.add('show');
+            setTimeout(() => {
+                errorEl.classList.remove('show');
+            }, 3000);
+        }
+
+        function updateProgress() {
+            if (!currentPlayer || !currentPlayer.isPlaying) return;
+            const current = currentPlayer.getCurrentTime();
+            const percent = (current / currentPlayer.duration) * 100;
+            progressBar.style.width = percent + '%';
+            statusEl.textContent = `播放中 ${formatTime(current)} / ${formatTime(currentPlayer.duration)}`;
+            animationFrame = requestAnimationFrame(updateProgress);
+        }
+
+        function formatTime(sec) {
+            const mins = Math.floor(sec / 60);
+            const secs = Math.floor(sec % 60);
+            return `${mins}:${secs.toString().padStart(2, '0')}`;
+        }
+
+        playBtn.addEventListener('click', () => {
+            try {
+                const code = musicInput.value.trim();
+                if (!code) {
+                    showError('请输入音乐代码');
+                    return;
+                }
+
+                if (currentPlayer && currentPlayer.isPlaying) {
+                    currentPlayer.pause();
+                    isPlaybackActive = false;  // 暂停时也停止播放激活状态
+                    clearAllHighlights();  // 清除所有键盘高亮
+                    playBtn.classList.remove('active');
+                    playBtn.textContent = '播放';
+                    if (animationFrame) cancelAnimationFrame(animationFrame);
+                    return;
+                }
+
+                const score = MusicParser.parseMusic(code);
+                MusicParser.processSustainPedals(score);
+
+                // 切换键盘到当前音乐的EDO
+                switchPiano(score.edo);
+
+                currentPlayer = new MusicParser.AudioPlayer(score);
+
+                // 设置播放回调
+                currentPlayer.onNoteStart = (midi) => {
+                    if (isPlaybackActive) {  // 只在播放激活时高亮
+                        highlightKey(midi, 300);
+                    }
+                };
+
+                // 设置行号高亮回调
+                currentPlayer.onLineHighlight = (lineNumber) => {
+                    console.log('Highlighting line:', lineNumber);
+                    if (!activeLines.has(lineNumber)) {
+                        activeLines.add(lineNumber);
+                        updateLineNumbers();
+                    }
+                };
+
+                currentPlayer.onLineClear = (lineNumber) => {
+                    console.log('Clearing line:', lineNumber);
+                    if (activeLines.has(lineNumber)) {
+                        activeLines.delete(lineNumber);
+                        updateLineNumbers();
+                    }
+                };
+
+                currentPlayer.onEnd = () => {
+                    clearAllHighlights(); // 播放结束时清除高亮
+                    activeLines.clear(); // 清除所有行号高亮
+                    updateLineNumbers();
+                    isPlaybackActive = false;  // 停止播放激活状态
+                    playBtn.classList.remove('active');
+                    playBtn.textContent = '播放';
+                    progressBar.style.width = '0%';
+                    statusEl.textContent = '播放完成';
+                };
+
+                isPlaybackActive = true;  // 开始播放激活状态
+                currentPlayer.play().then(() => {
+                    playBtn.classList.add('active');
+                    playBtn.textContent = '暂停';
+                    updateProgress();
+                });
+            } catch (e) {
+                console.error('播放错误:', e);
+                showError('解析错误: ' + e.message);
+            }
+        });
+
+        stopBtn.addEventListener('click', () => {
+            if (currentPlayer) {
+                currentPlayer.stop();
+                isPlaybackActive = false;  // 立即停止播放激活状态
+                clearAllHighlights(); // 清除所有键盘高亮
+                activeLines.clear(); // 清除所有行号高亮
+                updateLineNumbers(); // 更新行号显示
+                playBtn.classList.remove('active');
+                playBtn.textContent = '播放';
+                progressBar.style.width = '0%';
+                statusEl.textContent = '已停止';
+                if (animationFrame) cancelAnimationFrame(animationFrame);
+            }
+        });
+
+        progressContainer.addEventListener('click', (e) => {
+            if (!currentPlayer) return;
+            const rect = progressContainer.getBoundingClientRect();
+            const percent = ((e.clientX - rect.left) / rect.width) * 100;
+            progressBar.style.width = percent + '%';
+            currentPlayer.seek(percent);
+            if (!currentPlayer.isPlaying && currentPlayer.pausedAt > 0) {
+                statusEl.textContent = `已暂停 ${formatTime(currentPlayer.pausedAt)}`;
+            }
+        });
+
+        // ==================== 初始化 ====================
+
+        create12EdoPiano();
+        updateLineNumbers(); // 初始化行号显示
+        statusEl.textContent = '就绪 - 点击播放开始';
+    </script>
+</body>
+</html>
