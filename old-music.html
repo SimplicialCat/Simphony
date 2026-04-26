@@ -280,7 +280,6 @@
     <div class="controls">
         <button id="play-btn">播放</button>
         <button id="stop-btn">停止</button>
-        <button id="share-btn">分享</button>
         <span class="status" id="status">就绪</span>
     </div>
 
@@ -370,35 +369,7 @@ let bpm = 120
 | _{0 0 3 #4 #5 - 3 - 3 - - - -}
 | _{_3 - - - - - - - 6 - - - - - - -}`;
 
-        // ==================== URL乐谱加载功能 ====================
-
-        function loadScoreFromURL() {
-            try {
-                const hash = window.location.hash.substring(1); // Remove '#'
-                if (!hash.startsWith('code=')) {
-                    return null; // No encoded score in URL
-                }
-
-                const encodedScore = hash.substring(5); // Remove 'code='
-                const decodedScore = atob(encodedScore); // Base64 decode
-
-                // Basic validation - check if it looks like music code
-                if (decodedScore.includes('let') || decodedScore.includes('|')) {
-                    console.log('Successfully loaded score from URL');
-                    return decodedScore;
-                }
-
-                return null; // Invalid format
-            } catch (e) {
-                console.warn('Failed to decode score from URL:', e);
-                return null;
-            }
-        }
-
-        // Modify initialization to use URL code if available
-        const urlScore = loadScoreFromURL();
-        const initialCode = urlScore || defaultCode;
-        musicInput.value = initialCode;
+        musicInput.value = defaultCode;
 
         // ==================== 钢琴键盘创建 ====================
 
@@ -850,33 +821,6 @@ let bpm = 120
                 progressBar.style.width = '0%';
                 statusEl.textContent = '已停止';
                 if (animationFrame) cancelAnimationFrame(animationFrame);
-            }
-        });
-
-        // ==================== 分享按钮功能 ====================
-
-        const shareBtn = document.getElementById('share-btn');
-
-        shareBtn.addEventListener('click', async () => {
-            try {
-                const currentCode = musicInput.value;
-                const encodedCode = btoa(currentCode); // Base64 encode
-
-                // Construct shareable URL
-                const shareURL = `${window.location.origin}${window.location.pathname}#code=${encodedCode}`;
-
-                // Copy to clipboard
-                await navigator.clipboard.writeText(shareURL);
-
-                // Show success feedback
-                const originalStatus = statusEl.textContent;
-                statusEl.textContent = '链接已复制到剪贴板！';
-                setTimeout(() => {
-                    statusEl.textContent = originalStatus;
-                }, 2000);
-            } catch (e) {
-                console.error('Failed to copy to clipboard:', e);
-                showError('复制失败，请手动复制浏览器地址栏');
             }
         });
 

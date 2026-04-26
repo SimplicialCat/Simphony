@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Line Number Debug</title>
+    <style>
+        body {
+            font-family: monospace;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .test-music {
+            width: 100%;
+            height: 200px;
+            font-family: monospace;
+            font-size: 14px;
+            padding: 10px;
+            margin: 10px 0;
+            border: 1px solid #ccc;
+            background: white;
+        }
+        .log {
+            background: white;
+            padding: 15px;
+            margin: 10px 0;
+            border: 1px solid #ddd;
+            max-height: 400px;
+            overflow-y: auto;
+            font-size: 12px;
+        }
+        .log-entry {
+            margin: 3px 0;
+            padding: 3px;
+            border-bottom: 1px solid #eee;
+        }
+        button {
+            padding: 10px 20px;
+            margin: 5px;
+            cursor: pointer;
+            background: #7EB8DA;
+            border: none;
+            color: white;
+            font-size: 14px;
+        }
+        button:hover {
+            background: #6A8A9A;
+        }
+    </style>
+</head>
+<body>
+    <h1>Line Number Debug Test</h1>
+
+    <textarea id="music-input" class="test-music">let edo = 12
+let key = C
+let bpm = 120
+
+// First voice line 1
+1 2 3
+
+// Second voice line 2
+| 5 6 7
+
+// Third voice line 3
+1 2 3 4 5</textarea>
+
+    <div>
+        <button onclick="testParse()">Test Parse</button>
+        <button onclick="clearLog()">Clear Log</button>
+    </div>
+
+    <h2>Console Output</h2>
+    <div id="log" class="log"></div>
+
+    <script src="music-parser.js"></script>
+    <script>
+        const logEl = document.getElementById('log');
+        const originalLog = console.log;
+        const originalError = console.error;
+
+        function testParse() {
+            clearLog();
+            const musicInput = document.getElementById('music-input').value;
+
+            // Intercept console.log
+            console.log = function(...args) {
+                addLogEntry('LOG', args.join(' '));
+                originalLog.apply(console, args);
+            };
+
+            console.error = function(...args) {
+                addLogEntry('ERROR', args.join(' '));
+                originalError.apply(console, args);
+            };
+
+            try {
+                const parsed = MusicParser.parse(musicInput);
+                addLogEntry('SUCCESS', 'Parse completed!');
+
+                // Analyze events
+                addLogEntry('INFO', 'Analyzing parsed events...');
+                parsed.parts.forEach((part, partIdx) => {
+                    part.voices.forEach((voice, voiceIdx) => {
+                        addLogEntry(`Part ${partIdx} Voice ${voiceIdx}`, `${voice.length} events`);
+                        voice.forEach((evt, evtIdx) => {
+                            if (evt.type === 'note') {
+                                addLogEntry(`  Event ${evtIdx}`,
+                                    `pitch=${evt.pitch} midi=${evt.midi} line=${evt.lineNumber} start=${evt.start} dur=${evt.duration}`);
+                            }
+                        });
+                    });
+                });
+            } catch (e) {
+                addLogEntry('EXCEPTION', e.message + '\n' + e.stack);
+            }
+
+            // Restore console
+            console.log = originalLog;
+            console.error = originalError;
+        }
+
+        function addLogEntry(type, message) {
+            const entry = document.createElement('div');
+            entry.className = 'log-entry';
+            entry.innerHTML = `<strong>[${type}]</strong> ${message}`;
+            logEl.appendChild(entry);
+            logEl.scrollTop = logEl.scrollHeight;
+        }
+
+        function clearLog() {
+            logEl.innerHTML = '';
+        }
+    </script>
+</body>
+</html>
