@@ -520,7 +520,7 @@
   #grid-wrapper { grid-template-columns: var(--article-max-width) var(--toc-max-width); }
   nav#toc { max-width: max-content; }
 }
-</style></head><body><header class="header"><nav class="nav"><div class="logo"><span class="cursor-pointer" onclick="window.location.href='./index.html'" title="单纯和声 Simphony">« 单纯和声 Simphony</span></div></nav></header><div id="grid-wrapper" style="grid-template-areas: 'article toc';" data-base-url="./"><nav id="toc" class="sticky-nav mobile-sticky-nav"><div id="theme-options"></div><div class="block"><details open=""><summary><h1>目录</h1></summary><ul class="block"><li class=""><a class="bullet" href="./大三和弦.html" title="大三和弦 [大三和弦]">■</a><span class="link local" onclick="window.location.href='#大三和弦'"><span class="taxon"></span>大三和弦</span></li></ul></details></div></nav>
+</style></head><body><header class="header"><nav class="nav"><div class="logo"><span class="cursor-pointer" onclick="window.location.href='./index.html'" title="单纯和声 Simphony">« 单纯和声 Simphony</span></div></nav></header><div id="grid-wrapper" style="grid-template-areas: 'article toc';" data-base-url="./"><nav id="toc" class="sticky-nav mobile-sticky-nav"><div id="theme-options"></div><div class="block"><details open=""><summary><h1>目录</h1></summary><ul class="block"><li class=""><a class="bullet" href="./大三和弦.html" title="大三和弦 [大三和弦]">■</a><span class="link local" onclick="window.location.href='#大三和弦'"><span class="taxon"></span>大三和弦</span></li><li class=""><a class="bullet" href="./半减七和弦.html" title="半减七和弦 [半减七和弦]">■</a><span class="link local" onclick="window.location.href='#半减七和弦'"><span class="taxon"></span>半减七和弦</span></li></ul></details></div></nav>
 
 <article><section class="block" data-taxon=""><details open><summary id="和声"><header><h1><span class="taxon"></span>和声 <a class="slug" href="./和声.html">[和声]</a></h1><div class="metadata"><ul></ul></div></header></summary>
 <p><strong>和声</strong>或<strong>和弦</strong> (chord) 是若干个特定音程的音的组合.</p>
@@ -545,6 +545,36 @@ _5 1 3 (_5 1 3) - -
 _1 _5 3 (_1 _5 3) - -
 
 _4 1 6 (_4 1 6) - -
+
+</code></pre>
+</details></section></p>
+<p><section class="block hide-metadata" data-taxon=""><details open><summary id="半减七和弦"><header><h1><span class="taxon"></span>半减七和弦 <a class="slug" href="./半减七和弦.html">[半减七和弦]</a></h1><div class="metadata"><ul></ul></div></header></summary>
+<p><strong>半减七和弦</strong> (half diminished seventh chord) 是由</p>
+<ul>
+<li>根音, 以及其上的</li>
+<li>小三度,</li>
+<li>减五度,</li>
+<li>小七度</li>
+</ul>
+<p>构成的和弦.</p>
+<pre><code class="language-music">
+_7 2 4 6 (_7 2 4 6) - - -
+
+</code></pre>
+<p>开放排列:</p>
+<pre><code class="language-music">
+let bpm = 180
+
+@{_7 4 6 ^2 - - - -} @{_7 6 ^2 ^4 - - - -}
+
+</code></pre>
+<p>著名的 “刹车和弦” 是半减七和弦.</p>
+<p>如下片段来自<span class="link local"><a href="./晨风清雨.html" title="晨风清雨 [晨风清雨]">晨风清雨</a></span>:</p>
+<pre><code class="language-music">
+let bpm = 180
+
+| @{0 0 ^{2 3}} @{^1 7 6 7} @{^{1 - (1 3) -}} (^1 ^3 ^6) - - -
+| @{_7 4 6 -} @{_#5 2 3 -} @{_6 3} @{_5 3} @{#4}
 
 </code></pre>
 </details></section></p>
